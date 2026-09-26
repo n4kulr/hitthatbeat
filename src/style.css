@@ -295,16 +295,6 @@ kbd {
   transform-origin: center;
   transform: scale(calc(1 + var(--pulse, 0) * 0.12));
 }
-.reels {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: reel 2s linear infinite;
-}
-@keyframes reel {
-  to {
-    transform: rotate(360deg);
-  }
-}
 .logo i:nth-child(2) {
   color: var(--lemon);
   transition-delay: 0.03s;
