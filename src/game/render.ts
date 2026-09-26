@@ -94,7 +94,7 @@ export class Renderer {
 
   constructor(
     private canvas: HTMLCanvasElement,
-    private opts: { centerX?: number; sideHud?: boolean } = {},
+    private opts: { centerX?: number; sideHud?: boolean; hud?: boolean } = {},
   ) {
     this.g = canvas.getContext('2d')!;
     for (let i = 0; i < 160; i++) this.stars.push(this.newStar(Math.random()));
@@ -236,8 +236,10 @@ export class Renderer {
     this.drawReceptors(st, dt);
     this.drawNotes(st, now);
     this.drawEffects(now, dt, st.effects);
-    this.drawCombo(st, now, hype);
-    this.drawJudgment(now, st.showTiming);
+    if (this.opts.hud !== false) {
+      this.drawCombo(st, now, hype);
+      this.drawJudgment(now, st.showTiming);
+    }
     if (st.showTiming) this.drawErrorMeter(now);
     g.restore();
 

@@ -41,7 +41,6 @@ export class Home {
     this.el = h(`
       <div class="home">
         <canvas class="attract"></canvas>
-        <div class="scrim"></div>
 
         <aside class="panel">
           <div class="brand">

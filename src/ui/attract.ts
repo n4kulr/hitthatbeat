@@ -18,7 +18,7 @@ export class Attract {
   private seed = 7;
 
   constructor(canvas: HTMLCanvasElement) {
-    this.renderer = new Renderer(canvas, { centerX: 0.7 });
+    this.renderer = new Renderer(canvas, { centerX: 0.7, hud: false });
     window.addEventListener('resize', () => this.running && this.renderer.resize());
   }
 
