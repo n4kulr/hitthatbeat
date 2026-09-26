@@ -44,9 +44,21 @@ export class Home {
         <div class="scrim"></div>
 
         <aside class="panel">
-          <h1 class="logo" aria-label="juke">
-            <i>j</i><i>u</i><i>k</i><i>e</i>
-          </h1>
+          <div class="brand">
+            <h1 class="logo" aria-label="juke">
+              <i>j</i><i>u</i><i>k</i><i>e</i>
+            </h1>
+            <svg class="boombox" viewBox="0 0 136 104" aria-hidden="true">
+              <path class="bb-ink" d="M30 30 V16 a8 8 0 0 1 8 -8 h60 a8 8 0 0 1 8 8 V30" fill="none" stroke-width="7" stroke-linecap="round" />
+              <rect class="bb-body" x="4" y="28" width="128" height="72" rx="14" />
+              <rect x="50" y="36" width="36" height="7" rx="3" fill="var(--pink)" /><rect x="50" y="36" width="36" height="7" rx="3" fill="none" class="bb-line" />
+              <g class="bb-keys"><rect x="14" y="35" width="10" height="7" rx="2" fill="var(--pink)" /><rect x="26" y="35" width="10" height="7" rx="2" fill="var(--lemon)" /><rect x="100" y="35" width="10" height="7" rx="2" fill="var(--mint)" /><rect x="112" y="35" width="10" height="7" rx="2" fill="var(--peri)" /></g>
+              <g class="cone"><circle cx="34" cy="72" r="21" class="bb-speaker" /><circle cx="34" cy="72" r="11" fill="var(--pink)" class="bb-line" /><circle cx="34" cy="72" r="4" class="bb-dot" /></g>
+              <g class="cone"><circle cx="102" cy="72" r="21" class="bb-speaker" /><circle cx="102" cy="72" r="11" fill="var(--mint)" class="bb-line" /><circle cx="102" cy="72" r="4" class="bb-dot" /></g>
+              <rect x="58" y="52" width="20" height="36" rx="4" class="bb-tape" />
+              <g class="reels"><circle cx="68" cy="61" r="4.5" class="bb-dot" /><circle cx="68" cy="79" r="4.5" class="bb-dot" /></g>
+            </svg>
+          </div>
           <p class="tagline">Turn any song into a four-lane chart and play it.</p>
 
           <label class="drop">

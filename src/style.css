@@ -1,6 +1,7 @@
 :root {
-  --cream: #f3ead8;
-  --paper: #fbf6ea;
+  --cream: #efe9fb;
+  --paper: #fcfaff;
+  --plum: #2a1f45;
   --ink: #1b1a1f;
   --pink: #ff4f8b;
   --lemon: #ffd84d;
@@ -26,8 +27,8 @@ body {
 }
 
 body {
-  background-color: #1a0b3d;
-  background-image: radial-gradient(rgba(199, 125, 255, 0.16) 1.2px, transparent 1.3px);
+  background-color: #e9e1f8;
+  background-image: radial-gradient(rgba(124, 92, 214, 0.16) 1.2px, transparent 1.3px);
   background-size: 22px 22px;
   color: var(--ink);
   font-family: var(--display);
@@ -173,14 +174,14 @@ kbd {
    Lane colours only appear where they mean something: the keys. */
 
 .home {
-  --bg: #12072b;
-  --surface: #1d0f42;
-  --raised: #291659;
-  --border: #452c80;
-  --text: #f4efe3;
-  --text-2: #d9cdf5;
-  --text-3: #a592d6;
-  --accent: var(--lemon);
+  --bg: #efe9fb;
+  --surface: #f8f5fe;
+  --raised: #e4dbf7;
+  --border: #d3c6ef;
+  --text: #2a1f45;
+  --text-2: #5e5480;
+  --text-3: #7a6fa0;
+  --accent: #7c5cd6;
   position: fixed;
   inset: 0;
   overflow: hidden;
@@ -235,16 +236,74 @@ kbd {
   flex-direction: column;
   font-style: normal;
   color: var(--pink);
-  text-shadow: 0 5px 0 color-mix(in srgb, currentColor 40%, #000);
+  -webkit-text-stroke: 2.5px var(--plum);
+  paint-order: stroke fill;
+  text-shadow: 0 5px 0 var(--plum);
   transform: translateY(calc(var(--pulse, 0) * -6px));
   transition: transform 0.08s linear;
 }
 .logo i::after {
   content: '';
-  height: 6px;
+  height: 7px;
   margin-top: 12px;
-  border-radius: 3px;
+  border-radius: 4px;
   background: currentColor;
+  box-shadow: 0 0 0 2px var(--plum);
+}
+
+/* logo row: JUKE on the left, boombox flush with the drop box's right edge */
+.brand {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.boombox {
+  height: 96px;
+  flex-shrink: 0;
+  overflow: visible;
+  transform: translateY(calc(var(--pulse, 0) * -3px)) rotate(4deg);
+  transform-origin: 50% 100%;
+}
+.bb-body {
+  fill: #cbbcf3;
+  stroke: var(--plum);
+  stroke-width: 4;
+}
+.bb-ink {
+  stroke: var(--plum);
+}
+.bb-line,
+.bb-keys rect {
+  stroke: var(--plum);
+  stroke-width: 2.5;
+}
+.bb-speaker {
+  fill: var(--plum);
+}
+.bb-dot {
+  fill: var(--plum);
+}
+.bb-tape {
+  fill: var(--paper);
+  stroke: var(--plum);
+  stroke-width: 2.5;
+}
+/* speakers pump on the demo's beat */
+.cone {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(calc(1 + var(--pulse, 0) * 0.12));
+}
+.reels {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: reel 2s linear infinite;
+}
+@keyframes reel {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .logo i:nth-child(2) {
   color: var(--lemon);
@@ -554,7 +613,7 @@ body.dragging .drop {
   right: 24px;
   bottom: 24px;
   font-size: 12px;
-  color: var(--text-3);
+  color: rgba(255, 255, 255, 0.6);
   pointer-events: none;
 }
 
@@ -562,7 +621,7 @@ body.dragging .drop {
   .panel {
     width: 100%;
     padding: 24px 16px 16px;
-    background: rgba(18, 7, 43, 0.9);
+    background: rgba(239, 233, 251, 0.94);
   }
   .scrim,
   .demo-tag,
@@ -571,6 +630,9 @@ body.dragging .drop {
   }
   .logo {
     font-size: 60px;
+  }
+  .boombox {
+    height: 72px;
   }
   .icon-btn {
     top: 16px;
@@ -637,7 +699,7 @@ body.dragging .drop {
 
 @media (max-width: 720px) {
   .scrim {
-    background: rgba(18, 7, 43, 0.8);
+    background: rgba(239, 233, 251, 0.8);
   }
   .panel {
     padding: 22px 16px 14px;
@@ -661,7 +723,7 @@ body.dragging .drop {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(14, 5, 34, 0.78);
+  background: rgba(60, 40, 110, 0.35);
   backdrop-filter: blur(4px);
   opacity: 0;
   transition: opacity 0.18s;
@@ -712,10 +774,10 @@ body.dragging .drop {
   gap: 32px;
   padding: 32px;
   overflow: hidden;
-  border: 1px solid #452c80;
+  border: 1px solid #d3c6ef;
   border-radius: 16px;
-  background: #1d0f42;
-  color: #f4efe3;
+  background: #f8f5fe;
+  color: #2a1f45;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
   transform: translateY(8px);
   transition: transform 0.2s ease-out;
@@ -742,19 +804,19 @@ body.dragging .drop {
   border-radius: 8px;
   background: none;
   box-shadow: none;
-  color: #d9cdf5;
+  color: #5e5480;
   font-size: 22px;
 }
 .song-modal .close:hover {
-  background: #291659;
-  color: #f4efe3;
+  background: #ece5fa;
+  color: #2a1f45;
 }
 .sm-cover {
   aspect-ratio: 1;
   border-radius: 12px;
   overflow: hidden;
   align-self: start;
-  background: #291659;
+  background: #ece5fa;
 }
 .sm-cover img {
   width: 100%;
@@ -764,7 +826,7 @@ body.dragging .drop {
 }
 .sm-meta {
   font-size: 13px;
-  color: #d9cdf5;
+  color: #5e5480;
 }
 .sm-title {
   font-size: 32px;
@@ -776,7 +838,7 @@ body.dragging .drop {
 }
 .sm-artist {
   font-size: 16px;
-  color: #d9cdf5;
+  color: #5e5480;
   margin-top: 4px;
 }
 .diff-grid {
@@ -792,15 +854,15 @@ body.dragging .drop {
   gap: 8px;
   text-align: left;
   padding: 12px 16px;
-  border: 1px solid #452c80;
+  border: 1px solid #d3c6ef;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.03);
-  color: #f4efe3;
+  color: #2a1f45;
   cursor: pointer;
   transition: border-color 0.12s, background 0.12s;
 }
 .diff-btn:hover {
-  background: #291659;
+  background: #ece5fa;
 }
 .diff-normal {
   --c: var(--lemon);
@@ -814,7 +876,7 @@ body.dragging .drop {
 .diff-btn.selected {
   border-color: var(--c);
   box-shadow: inset 0 0 0 1px var(--c);
-  background: color-mix(in srgb, var(--c) 16%, #1d0f42);
+  background: color-mix(in srgb, var(--c) 16%, #f8f5fe);
 }
 .diff-btn.selected .diff-name {
   color: var(--c);
@@ -842,7 +904,7 @@ body.dragging .drop {
 }
 .diff-top kbd {
   border-width: 1px;
-  color: #a592d6;
+  color: #7a6fa0;
   opacity: 1;
 }
 .diff-stars {
@@ -853,7 +915,7 @@ body.dragging .drop {
   font-family: var(--mono);
   font-style: normal;
   font-size: 12px;
-  color: #d9cdf5;
+  color: #5e5480;
 }
 .diff-stars i::before {
   content: '★ ';
@@ -863,7 +925,7 @@ body.dragging .drop {
   font-family: var(--mono);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-  color: #a592d6;
+  color: #7a6fa0;
 }
 .diff-chip {
   font-family: var(--mono);
@@ -921,7 +983,7 @@ body.dragging .drop {
   font-size: 13px;
 }
 .sm-foot .inline-link {
-  color: #d9cdf5;
+  color: #5e5480;
   font-weight: 500;
 }
 .sm-foot .inline-link.danger:hover {
@@ -1253,7 +1315,7 @@ input[type='range']::-moz-range-thumb {
 .game {
   position: fixed;
   inset: 0;
-  background: #12072b;
+  background: #221a42;
   z-index: 10;
   user-select: none;
   touch-action: none;
@@ -1369,7 +1431,7 @@ input[type='range']::-moz-range-thumb {
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgba(18, 7, 43, 0.7);
+  background: rgba(34, 26, 66, 0.7);
   backdrop-filter: blur(4px);
 }
 .pause-card {
@@ -1408,17 +1470,14 @@ input[type='range']::-moz-range-thumb {
   inset: 0;
   z-index: 10;
   overflow-y: auto;
-  background-color: #1a0b3d;
-  background-image: radial-gradient(rgba(199, 125, 255, 0.16) 1.2px, transparent 1.3px);
+  background-color: #e9e1f8;
+  background-image: radial-gradient(rgba(124, 92, 214, 0.16) 1.2px, transparent 1.3px);
   background-size: 22px 22px;
   display: grid;
   grid-template-columns: minmax(280px, 1fr) minmax(0, 1.3fr);
   align-items: center;
   gap: 40px;
   padding: 40px max(28px, 6vw);
-}
-.results {
-  color: var(--paper);
 }
 .card,
 .modal,
@@ -1742,7 +1801,7 @@ input[type='range']::-moz-range-thumb {
   z-index: 300;
   display: grid;
   place-items: center;
-  background: rgba(123, 60, 230, 0.88);
+  background: rgba(190, 170, 240, 0.9);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s;

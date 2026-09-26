@@ -261,9 +261,9 @@ export class Renderer {
     const g = this.g;
     const { W, H, cx, vpY } = this;
     const bg = g.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#2d1266');
-    bg.addColorStop(0.55, '#1e0c47');
-    bg.addColorStop(1, '#12072b');
+    bg.addColorStop(0, '#4a3a7a');
+    bg.addColorStop(0.55, '#33285e');
+    bg.addColorStop(1, '#221a42');
     g.fillStyle = bg;
     g.fillRect(-20, -20, W + 40, H + 40);
 
