@@ -1,7 +1,7 @@
 import './style.css';
 import type { Difficulty, SongRecord } from './types';
 import { db } from './lib/db';
-import { h, hash, titleFromFilename } from './lib/util';
+import { cleanMeta, h, hash, titleFromFilename } from './lib/util';
 import { analyzeBuffer, decode } from './audio/engine';
 import { ANALYZER_VERSION } from './audio/analyze';
 import { renderDemoTrack } from './audio/demo';
@@ -36,6 +36,13 @@ home.show();
 
 async function refresh() {
   songs = await db.all();
+  for (const s of songs) {
+    const m = cleanMeta(s.title, s.artist);
+    if (s.source === 'file' && (m.title !== s.title || m.artist !== s.artist)) {
+      Object.assign(s, m);
+      await db.put(s);
+    }
+  }
   home.setSongs(songs);
 }
 

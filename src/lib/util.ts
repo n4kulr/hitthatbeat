@@ -52,8 +52,24 @@ export function coverArt(seed: string, waveform: number[] = []): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
+const PLACEHOLDER_ARTIST = /^(na|n\/a|none|unknown( artist)?|various( artists)?)$/i;
+const TITLE_NOISE = /\s*[([](official|lyric|lyrics|audio|video|music video|visuali[sz]er|hd|hq|4k|mv|m\/v|remaster(ed)?)[^)\]]*[)\]]/gi;
+
+/** Tidy "NA - Artist - Song (Official Video)" style names into a real title + artist. */
+export function cleanMeta(title: string, artist: string): { title: string; artist: string } {
+  let t = title.replace(TITLE_NOISE, '').replace(/\s+/g, ' ').trim();
+  let a = PLACEHOLDER_ARTIST.test(artist.trim()) ? '' : artist.trim();
+  const m = t.match(/^(.+?)\s+[-–—]\s+(.+)$/);
+  if (m && PLACEHOLDER_ARTIST.test(m[1].trim())) t = m[2].trim();
+  const m2 = t.match(/^(.+?)\s+[-–—]\s+(.+)$/);
+  if (!a && m2) {
+    a = m2[1].trim();
+    t = m2[2].trim();
+  }
+  return { title: t || title, artist: a };
+}
+
 export function titleFromFilename(name: string): { title: string; artist: string } {
   const base = name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim();
-  const m = base.match(/^(.+?)\s+-\s+(.+)$/);
-  return m ? { artist: m[1].trim(), title: m[2].trim() } : { title: base || 'untitled', artist: '' };
+  return cleanMeta(base || 'untitled', '');
 }

@@ -1,6 +1,6 @@
 import { DIFFICULTIES, type Difficulty, type SongRecord } from '../types';
 import { keyLabel, saveSettings, settings } from '../lib/settings';
-import { coverArt, escapeHtml, formatTime, h } from '../lib/util';
+import { coverArt, escapeHtml, formatTime, h, hash } from '../lib/util';
 import { playSfx } from '../audio/sfx';
 import { LANE_COLORS } from '../game/render';
 import { openSettings } from './settings';
@@ -44,6 +44,7 @@ export class Home {
         <div class="scrim"></div>
 
         <aside class="panel">
+          <div class="lanes" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
           <h1 class="logo" aria-label="hit that beat">
             <span class="l1">hit</span><span class="l2">that</span><span class="l3">beat</span>
           </h1>
@@ -140,11 +141,11 @@ export class Home {
       .map((s) => {
         const best = bestGrade(s);
         return `
-          <button class="row" data-song="${escapeHtml(s.id)}">
+          <button class="row" data-song="${escapeHtml(s.id)}" style="--c:${LANE_COLORS[hash(s.id) % 4]}">
             <span class="row-cover"><img src="${escapeHtml(coverFor(s))}" alt="" loading="lazy" /></span>
             <span class="row-text"><b>${escapeHtml(s.title)}</b><small>${escapeHtml(s.artist || (s.source === 'file' ? 'local file' : '—'))}</small></span>
             <span class="row-meta"><span>${Math.round(s.analysis.bpm)} bpm</span><span>${formatTime(s.analysis.duration)}</span></span>
-            ${best ? `<span class="row-grade grade-${best.b.grade}" title="best on ${best.d}">${best.b.grade}</span>` : '<span class="row-grade none">new</span>'}
+            ${best ? `<span class="row-grade grade-${best.b.grade}" title="best on ${best.d}">${best.b.grade}</span>` : ''}
           </button>`;
       })
       .join('');

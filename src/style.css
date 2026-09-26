@@ -8,8 +8,9 @@
   --peri: #7b8cff;
   --orange: #ff8a3d;
   --lilac: #c77dff;
-  --display: 'Bricolage Grotesque', system-ui, sans-serif;
-  --mono: 'Space Mono', ui-monospace, monospace;
+  --display: 'Archivo', system-ui, sans-serif;
+  /* one family: numbers just switch to tabular figures */
+  --mono: 'Archivo', system-ui, sans-serif;
   --pop: cubic-bezier(0.2, 1.5, 0.4, 1);
 }
 
@@ -29,6 +30,7 @@ body {
   background-size: 22px 22px;
   color: var(--ink);
   font-family: var(--display);
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
@@ -211,24 +213,48 @@ kbd {
   background: var(--bg);
 }
 
+.lanes {
+  display: flex;
+  gap: 4px;
+  margin-bottom: -8px;
+}
+.lanes i {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--pink);
+}
+.lanes i:nth-child(2) {
+  background: var(--lemon);
+}
+.lanes i:nth-child(3) {
+  background: var(--mint);
+}
+.lanes i:nth-child(4) {
+  background: var(--peri);
+}
 .logo {
   margin: 0;
-  font-family: 'Unbounded', var(--display);
-  font-weight: 800;
-  font-size: 56px;
-  line-height: 0.92;
-  letter-spacing: -0.04em;
+  font-family: var(--display);
+  font-weight: 900;
+  font-stretch: 125%;
+  font-size: 52px;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
   text-transform: uppercase;
   user-select: none;
 }
 .logo span {
   display: block;
 }
+.logo .l1 {
+  color: var(--pink);
+}
 .logo .l2 {
-  color: var(--text-3);
+  color: var(--lemon);
 }
 .logo .l3 {
-  color: var(--pink);
+  color: var(--mint);
 }
 .tagline {
   margin: -12px 0 0;
@@ -243,9 +269,9 @@ kbd {
   align-items: center;
   gap: 16px;
   padding: 20px;
-  border: 1.5px dashed #3a3356;
+  border: 1.5px dashed var(--peri);
   border-radius: 12px;
-  background: var(--surface);
+  background: color-mix(in srgb, var(--peri) 8%, var(--surface));
   cursor: pointer;
   transition:
     border-color 0.15s,
@@ -253,8 +279,9 @@ kbd {
 }
 .drop:hover,
 body.dragging .drop {
-  border-color: var(--accent);
-  background: var(--raised);
+  border-color: var(--pink);
+  border-style: solid;
+  background: color-mix(in srgb, var(--pink) 12%, var(--surface));
 }
 .drop-icon {
   width: 48px;
@@ -263,7 +290,7 @@ body.dragging .drop {
   display: grid;
   place-items: center;
   border-radius: 10px;
-  background: var(--accent);
+  background: var(--pink);
   color: var(--ink);
   transition: transform 0.2s var(--pop);
 }
@@ -295,7 +322,7 @@ body.dragging .drop {
   cursor: pointer;
 }
 .chip:hover {
-  color: var(--accent);
+  color: var(--mint);
 }
 
 /* library list */
@@ -368,8 +395,15 @@ body.dragging .drop {
   text-align: left;
   cursor: pointer;
 }
+.row {
+  box-shadow: inset 3px 0 0 transparent;
+  transition:
+    background 0.12s,
+    box-shadow 0.12s;
+}
 .row:hover {
-  background: var(--raised);
+  background: color-mix(in srgb, var(--c) 10%, var(--surface));
+  box-shadow: inset 3px 0 0 var(--c);
 }
 .row:focus-visible {
   outline: 2px solid var(--accent);
@@ -478,17 +512,16 @@ body.dragging .drop {
   gap: 4px;
 }
 .ring {
-  min-width: 24px;
-  height: 24px;
+  min-width: 26px;
+  height: 26px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--border);
-  border-bottom: 2px solid var(--c);
   border-radius: 6px;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-2);
+  background: var(--c);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink);
 }
 
 .icon-btn {
@@ -508,8 +541,9 @@ body.dragging .drop {
   transition: color 0.12s, border-color 0.12s;
 }
 .icon-btn:hover {
-  color: var(--text);
-  border-color: #3a3356;
+  color: var(--ink);
+  background: var(--lemon);
+  border-color: var(--lemon);
 }
 
 .demo-tag {
