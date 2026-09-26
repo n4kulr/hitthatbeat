@@ -214,54 +214,52 @@ kbd {
   background: var(--bg);
 }
 
-.lanes {
-  display: flex;
-  gap: 4px;
-  margin-bottom: -8px;
-}
-.lanes i {
-  flex: 1;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--pink);
-}
-.lanes i:nth-child(2) {
-  background: var(--lemon);
-}
-.lanes i:nth-child(3) {
-  background: var(--mint);
-}
-.lanes i:nth-child(4) {
-  background: var(--peri);
-}
 .logo {
+  display: flex;
+  gap: 8px;
   margin: 0;
-  font-family: var(--display);
+  font-family: 'Tilt Warp', var(--arcade);
+  font-variation-settings:
+    'XROT' 0,
+    'YROT' -18;
+  font-size: 80px;
   font-weight: 400;
-  font-size: 72px;
   line-height: 0.9;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   text-transform: uppercase;
   user-select: none;
 }
-.logo span {
-  display: block;
-}
+/* one letter per lane, each sitting on its lane bar; they ripple on the demo's beat */
 .logo i {
+  display: flex;
+  flex-direction: column;
   font-style: normal;
   color: var(--pink);
+  text-shadow: 0 5px 0 color-mix(in srgb, currentColor 40%, #000);
+  transform: translateY(calc(var(--pulse, 0) * -6px));
+  transition: transform 0.08s linear;
+}
+.logo i::after {
+  content: '';
+  height: 6px;
+  margin-top: 12px;
+  border-radius: 3px;
+  background: currentColor;
 }
 .logo i:nth-child(2) {
   color: var(--lemon);
+  transition-delay: 0.03s;
 }
 .logo i:nth-child(3) {
   color: var(--mint);
+  transition-delay: 0.06s;
 }
 .logo i:nth-child(4) {
   color: var(--peri);
+  transition-delay: 0.09s;
 }
 .tagline {
-  margin: -12px 0 0;
+  margin: -8px 0 0;
   font-size: 15px;
   line-height: 1.5;
   color: var(--text-2);
@@ -572,7 +570,7 @@ body.dragging .drop {
     display: none;
   }
   .logo {
-    font-size: 44px;
+    font-size: 60px;
   }
   .icon-btn {
     top: 16px;
@@ -1781,7 +1779,6 @@ body.dragging .drop-veil {
 
 /* ------------------------------------------------------------ arcade type */
 
-.logo,
 .grade-letter,
 .game-count,
 .pause-title,
