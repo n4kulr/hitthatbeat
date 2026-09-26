@@ -557,6 +557,27 @@ export class Renderer {
       }
       g.restore();
     }
+
+    // release marker: a hollow ring at the tail, pulsing as the let-go point arrives
+    if (n.end! - st.t <= st.lookahead) {
+      const rr = this.noteR * tl.s * 0.72;
+      const soon = holding ? Math.max(0, 1 - (n.end! - st.t) / 0.35) : 0;
+      const ring = rr * (1 + soon * 0.15 * (0.5 + 0.5 * Math.sin(now / 45)));
+      g.globalAlpha = dead ? 0.5 : 1;
+      g.beginPath();
+      g.arc(tl.x, tl.y, ring, 0, Math.PI * 2);
+      g.lineWidth = Math.max(4, ring * 0.5);
+      g.strokeStyle = INK;
+      g.stroke();
+      g.lineWidth = Math.max(2.5, ring * 0.3);
+      g.strokeStyle = soon > 0 ? lighten(color, soon * 0.5) : color;
+      g.stroke();
+      g.beginPath();
+      g.arc(tl.x, tl.y, ring * 0.35, 0, Math.PI * 2);
+      g.fillStyle = hexA(CREAM, dead ? 0.4 : 0.9);
+      g.fill();
+      g.globalAlpha = 1;
+    }
   }
 
   private drawEffects(now: number, dt: number, effects: boolean) {
