@@ -59,5 +59,4 @@ export interface Settings {
   hitVolume: number;
   showTiming: boolean;
   effects: boolean;
-  lastDifficulty: Difficulty;
 }

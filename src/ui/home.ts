@@ -1,5 +1,5 @@
 import { DIFFICULTIES, type Difficulty, type SongRecord } from '../types';
-import { keyLabel, saveSettings, settings } from '../lib/settings';
+import { keyLabel, settings } from '../lib/settings';
 import { coverArt, escapeHtml, formatTime, h, hash } from '../lib/util';
 import { playSfx } from '../audio/sfx';
 import { LANE_COLORS } from '../game/render';
@@ -155,7 +155,7 @@ export class Home {
 
   openSong(song: SongRecord) {
     this.closeSong();
-    let diff: Difficulty = settings.lastDifficulty;
+    let diff: Difficulty = 'normal';
     const a = song.analysis;
     const cover = escapeHtml(coverFor(song));
     const el = h(`
@@ -199,7 +199,6 @@ export class Home {
     select(diff);
 
     const play = () => {
-      saveSettings({ lastDifficulty: diff });
       this.closeSong();
       this.actions.play(song, diff);
     };

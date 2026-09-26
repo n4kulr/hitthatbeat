@@ -10,7 +10,6 @@ const DEFAULTS: Settings = {
   hitVolume: 0.35,
   showTiming: true,
   effects: true,
-  lastDifficulty: 'normal',
 };
 
 function load(): Settings {
