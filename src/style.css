@@ -196,11 +196,11 @@ kbd {
   display: flex;
   gap: 8px;
   margin: 0;
-  font-family: 'Dela Gothic One', var(--arcade);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
   font-size: 80px;
-  font-weight: 400;
+  font-weight: 800;
   line-height: 0.9;
-  letter-spacing: 0;
+  letter-spacing: -0.04em;
   text-transform: uppercase;
   user-select: none;
 }
@@ -210,7 +210,6 @@ kbd {
   flex-direction: column;
   font-style: normal;
   color: var(--pink);
-  text-shadow: 0 0 28px color-mix(in srgb, currentColor 45%, transparent);
   transform: translateY(calc(var(--pulse, 0) * -6px));
   transition: transform 0.08s linear;
 }
@@ -242,8 +241,10 @@ kbd {
   gap: 16px;
 }
 .boombox {
-  height: 88px;
+  height: 72px;
   flex-shrink: 0;
+  margin-left: auto;
+  color: var(--fg-2);
 }
 .tagline {
   margin: -4px 0 4px;
