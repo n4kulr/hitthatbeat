@@ -261,16 +261,16 @@ export class Renderer {
     const g = this.g;
     const { W, H, cx, vpY } = this;
     const bg = g.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#1a1033');
-    bg.addColorStop(0.55, '#140d29');
-    bg.addColorStop(1, '#0b0816');
+    bg.addColorStop(0, '#2d1266');
+    bg.addColorStop(0.55, '#1e0c47');
+    bg.addColorStop(1, '#12072b');
     g.fillStyle = bg;
     g.fillRect(-20, -20, W + 40, H + 40);
 
     // glowing "sun" at the vanishing point
     const sunR = this.spacing * (1.6 + st.bass * 1.2 + pulse * 0.4 + hype * 0.3);
     const sun = g.createRadialGradient(cx, vpY + H * 0.12, 0, cx, vpY + H * 0.12, sunR * 2.2);
-    const hue = hype === 2 ? (performance.now() / 20) % 360 : 330;
+    const hue = hype === 2 ? (performance.now() / 20) % 360 : 285;
     sun.addColorStop(0, `hsla(${hue}, 100%, 70%, ${0.35 + st.bass * 0.3})`);
     sun.addColorStop(0.4, `hsla(${hue + 40}, 100%, 60%, 0.12)`);
     sun.addColorStop(1, 'rgba(0,0,0,0)');
@@ -558,23 +558,25 @@ export class Renderer {
       g.restore();
     }
 
-    // release marker: a hollow ring at the tail, pulsing as the let-go point arrives
+    // release marker: a half-disc cap on the tail (flat edge across the lane), pulsing as the let-go point arrives
     if (n.end! - st.t <= st.lookahead) {
-      const rr = this.noteR * tl.s * 0.72;
       const soon = holding ? Math.max(0, 1 - (n.end! - st.t) / 0.35) : 0;
-      const ring = rr * (1 + soon * 0.15 * (0.5 + 0.5 * Math.sin(now / 45)));
+      const rr = this.noteR * tl.s * 0.8 * (1 + soon * 0.15 * (0.5 + 0.5 * Math.sin(now / 45)));
+      const a0 = Math.atan2(ny, nx);
+      const a1 = Math.atan2(-ny, -nx);
       g.globalAlpha = dead ? 0.5 : 1;
       g.beginPath();
-      g.arc(tl.x, tl.y, ring, 0, Math.PI * 2);
-      g.lineWidth = Math.max(4, ring * 0.5);
+      g.arc(tl.x, tl.y, rr, a0, a1, true);
+      g.closePath();
+      g.fillStyle = soon > 0 ? lighten(color, soon * 0.5) : color;
+      g.fill();
+      g.lineWidth = Math.max(2.5, rr * 0.16);
       g.strokeStyle = INK;
       g.stroke();
-      g.lineWidth = Math.max(2.5, ring * 0.3);
-      g.strokeStyle = soon > 0 ? lighten(color, soon * 0.5) : color;
-      g.stroke();
       g.beginPath();
-      g.arc(tl.x, tl.y, ring * 0.35, 0, Math.PI * 2);
-      g.fillStyle = hexA(CREAM, dead ? 0.4 : 0.9);
+      g.arc(tl.x, tl.y, rr * 0.5, a0, a1, true);
+      g.closePath();
+      g.fillStyle = hexA(CREAM, dead ? 0.35 : 0.85);
       g.fill();
       g.globalAlpha = 1;
     }

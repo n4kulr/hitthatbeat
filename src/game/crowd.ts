@@ -1,6 +1,6 @@
 const LANE = ['#ff4f8b', '#ffd84d', '#3fe0b5', '#7b8cff'];
 /** Silhouette fill per row; back rows are lighter, as if seen through stage haze. */
-const ROW_FILL = ['#06040d', '#0d0a1c', '#16112c'];
+const ROW_FILL = ['#0c0520', '#170a36', '#23114d'];
 
 type Hair = 'short' | 'long' | 'afro' | 'bun' | 'cap' | 'beanie' | 'phones';
 const HAIRS: Hair[] = ['short', 'short', 'long', 'long', 'afro', 'bun', 'cap', 'beanie', 'phones'];
@@ -125,7 +125,7 @@ export class Crowd {
       const hy = v.H * (0.9 + fan.dy - fan.row * 0.06) - jump;
       const pose: Pose = wave > 0.3 ? 'up' : hyped ? fan.hype : fan.calm;
       const angles = this.poseAngles(pose, f, fan.phase, v.t);
-      const rim = x < v.cx ? LANE[0] : LANE[3];
+      const rim = x < v.cx ? '#c77dff' : LANE[3];
 
       // top rim light: the same shape in stage colour, nudged up, then the silhouette over it
       g.globalAlpha = fan.a * (0.25 + 0.55 * pulse * this.level) * (1 - fan.row * 0.25);
@@ -138,8 +138,8 @@ export class Crowd {
 
     // floor haze
     const haze = g.createLinearGradient(0, v.H * 0.86, 0, v.H);
-    haze.addColorStop(0, 'rgba(11,8,22,0)');
-    haze.addColorStop(1, 'rgba(11,8,22,0.8)');
+    haze.addColorStop(0, 'rgba(18,7,43,0)');
+    haze.addColorStop(1, 'rgba(18,7,43,0.8)');
     g.fillStyle = haze;
     g.fillRect(0, v.H * 0.86, v.W, v.H * 0.14);
 
@@ -270,7 +270,7 @@ export class Crowd {
     g.globalCompositeOperation = 'lighter';
     const a = 0.08 + pulse * 0.1 * energy + energy * 0.06;
     for (const [u, c] of [
-      [0.15, LANE[0]],
+      [0.15, '#c77dff'],
       [0.85, LANE[3]],
     ] as const) {
       const x = u * v.W;
