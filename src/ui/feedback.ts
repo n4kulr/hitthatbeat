@@ -77,7 +77,7 @@ export function confirmDialog(message: string, yes = 'yes', no = 'nah'): Promise
       <div class="modal-veil">
         <div class="modal confirm-modal">
           <p>${escapeHtml(message)}</p>
-          <div class="row">
+          <div class="btn-row">
             <button class="btn btn-pink" data-v="1">${escapeHtml(yes)}</button>
             <button class="btn btn-ghost" data-v="0">${escapeHtml(no)}</button>
           </div>
