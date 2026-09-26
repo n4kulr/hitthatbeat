@@ -122,7 +122,7 @@ async function importDemo() {
     p.update('decoding', 0);
     const blob = await renderDemoTrack();
     const buffer = await decode(await blob.arrayBuffer());
-    return saveNew({ id: 'demo', title: 'starter track', artist: 'laneline', source: 'demo', audio: blob }, buffer, p);
+    return saveNew({ id: 'demo', title: 'starter track', artist: 'juke', source: 'demo', audio: blob }, buffer, p);
   });
   if (song) home.openSong(song);
 }
