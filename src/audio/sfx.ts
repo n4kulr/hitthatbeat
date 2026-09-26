@@ -17,17 +17,27 @@ function build() {
   if (buffers.size) return;
   let seed = 7;
   const noise = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
+  // Unpitched on purpose: a tonal blip clashes with whatever key the song is in,
+  // while a short hat-like tick sits on top of any mix.
+  let hp = 0;
+  let px = 0;
   buffers.set(
     'hit',
-    render(0.07, (t) => {
-      const env = Math.exp(-t * 70);
-      const f = 1800 - t * 9000;
-      return (Math.sin(2 * Math.PI * f * t) * 0.6 + noise() * Math.exp(-t * 400) * 0.5) * env;
+    render(0.045, (t) => {
+      const x = noise();
+      hp = 0.75 * (hp + x - px); // one-pole high-pass, keeps only the crisp top end
+      px = x;
+      const click = t < 0.003 ? x * (1 - t / 0.003) * 0.35 : 0;
+      return hp * Math.exp(-t * 110) * 0.9 + click;
     }),
   );
+  let lp = 0;
   buffers.set(
     'break',
-    render(0.25, (t) => Math.sin(2 * Math.PI * (220 - t * 500) * t) * Math.exp(-t * 14) * 0.5),
+    render(0.2, (t) => {
+      lp += 0.06 * (noise() - lp); // low-passed noise: a muffled thud, no pitch
+      return lp * 4 * Math.exp(-t * 18);
+    }),
   );
   buffers.set('tick', render(0.05, (t) => Math.sin(2 * Math.PI * 1000 * t) * Math.exp(-t * 90)));
   buffers.set('tickHi', render(0.05, (t) => Math.sin(2 * Math.PI * 1600 * t) * Math.exp(-t * 90)));
