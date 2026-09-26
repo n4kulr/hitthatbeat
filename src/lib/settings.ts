@@ -7,7 +7,6 @@ const DEFAULTS: Settings = {
   offsetMs: 0,
   keys: ['KeyD', 'KeyF', 'KeyJ', 'KeyK'],
   musicVolume: 0.8,
-  hitVolume: 0.35,
   showTiming: true,
   effects: true,
 };

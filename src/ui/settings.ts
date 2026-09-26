@@ -33,15 +33,9 @@ export function openSettings(onClose?: () => void) {
           <div class="keys">${[0, 1, 2, 3].map((i) => `<button class="keycap lane-${i}" data-lane="${i}"></button>`).join('')}</div>
         </div>
 
-        <div class="setting two">
-          <div>
-            <div class="setting-head"><span>music</span><b data-out="musicVolume"></b></div>
-            <input type="range" min="0" max="1" step="0.05" data-key="musicVolume" />
-          </div>
-          <div>
-            <div class="setting-head"><span>hit sounds</span><b data-out="hitVolume"></b></div>
-            <input type="range" min="0" max="1" step="0.05" data-key="hitVolume" />
-          </div>
+        <div class="setting">
+          <div class="setting-head"><span>music</span><b data-out="musicVolume"></b></div>
+          <input type="range" min="0" max="1" step="0.05" data-key="musicVolume" />
         </div>
 
         <div class="setting toggles">
@@ -57,7 +51,6 @@ export function openSettings(onClose?: () => void) {
     speed: (v) => v.toFixed(1),
     offsetMs: (v) => `${v > 0 ? '+' : ''}${v} ms`,
     musicVolume: (v) => `${Math.round(v * 100)}%`,
-    hitVolume: (v) => `${Math.round(v * 100)}%`,
   };
 
   const refresh = () => {
@@ -81,7 +74,6 @@ export function openSettings(onClose?: () => void) {
     const key = input.dataset.key as keyof Settings | undefined;
     if (!key) return;
     saveSettings({ [key]: input.type === 'checkbox' ? input.checked : parseFloat(input.value) } as Partial<Settings>);
-    if (key === 'hitVolume') playSfx('hit');
     refresh();
   });
 

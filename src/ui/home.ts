@@ -47,15 +47,22 @@ export class Home {
             <h1 class="logo" aria-label="juke">
               <i>j</i><i>u</i><i>k</i><i>e</i>
             </h1>
-            <svg class="boombox" viewBox="0 0 136 104" aria-hidden="true">
-              <path class="bb-ink" d="M30 30 V16 a8 8 0 0 1 8 -8 h60 a8 8 0 0 1 8 8 V30" fill="none" stroke-width="7" stroke-linecap="round" />
-              <rect class="bb-body" x="4" y="28" width="128" height="72" rx="14" />
-              <rect x="50" y="36" width="36" height="7" rx="3" fill="var(--pink)" /><rect x="50" y="36" width="36" height="7" rx="3" fill="none" class="bb-line" />
-              <g class="bb-keys"><rect x="14" y="35" width="10" height="7" rx="2" fill="var(--pink)" /><rect x="26" y="35" width="10" height="7" rx="2" fill="var(--lemon)" /><rect x="100" y="35" width="10" height="7" rx="2" fill="var(--mint)" /><rect x="112" y="35" width="10" height="7" rx="2" fill="var(--peri)" /></g>
-              <g class="cone"><circle cx="34" cy="72" r="21" class="bb-speaker" /><circle cx="34" cy="72" r="11" fill="var(--pink)" class="bb-line" /><circle cx="34" cy="72" r="4" class="bb-dot" /></g>
-              <g class="cone"><circle cx="102" cy="72" r="21" class="bb-speaker" /><circle cx="102" cy="72" r="11" fill="var(--mint)" class="bb-line" /><circle cx="102" cy="72" r="4" class="bb-dot" /></g>
-              <rect x="58" y="52" width="20" height="36" rx="4" class="bb-tape" />
-              <g><circle cx="68" cy="61" r="4.5" class="bb-dot" /><circle cx="68" cy="79" r="4.5" class="bb-dot" /></g>
+            <svg class="boombox" viewBox="0 0 160 100" aria-hidden="true">
+              <path d="M44 26 V15 a8 8 0 0 1 8 -8 h56 a8 8 0 0 1 8 8 V26" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="5" stroke-linecap="round" />
+              <rect x="3" y="24" width="154" height="73" rx="16" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.35)" stroke-width="1.5" />
+              <rect x="14" y="32" width="132" height="12" rx="6" fill="rgba(0,0,0,0.22)" />
+              <circle cx="24" cy="38" r="3" fill="var(--pink)" /><circle cx="33" cy="38" r="3" fill="var(--lemon)" /><circle cx="42" cy="38" r="3" fill="var(--mint)" /><circle cx="51" cy="38" r="3" fill="var(--peri)" />
+              <rect x="64" y="36.5" width="74" height="3" rx="1.5" fill="rgba(255,255,255,0.25)" /><rect x="104" y="33" width="2.5" height="10" rx="1" fill="var(--pink)" />
+              <circle cx="38" cy="71" r="20" fill="#171230" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" />
+              <circle cx="38" cy="71" r="14" fill="none" stroke="var(--pink)" stroke-opacity="0.7" stroke-width="2" />
+              <circle cx="38" cy="71" r="6" fill="#2c2452" /><circle cx="38" cy="71" r="2.2" fill="rgba(255,255,255,0.55)" />
+              <circle cx="122" cy="71" r="20" fill="#171230" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" />
+              <circle cx="122" cy="71" r="14" fill="none" stroke="var(--mint)" stroke-opacity="0.7" stroke-width="2" />
+              <circle cx="122" cy="71" r="6" fill="#2c2452" /><circle cx="122" cy="71" r="2.2" fill="rgba(255,255,255,0.55)" />
+              <rect x="64" y="54" width="32" height="30" rx="5" fill="rgba(0,0,0,0.25)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" />
+              <circle cx="73" cy="66" r="4.5" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" />
+              <circle cx="87" cy="66" r="4.5" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" />
+              <rect x="70" y="75" width="20" height="3" rx="1.5" fill="rgba(255,255,255,0.3)" />
             </svg>
           </div>
           <p class="tagline">Turn any song into a four-lane chart and play it.</p>

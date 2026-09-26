@@ -56,7 +56,6 @@ export interface Settings {
   offsetMs: number;
   keys: [string, string, string, string];
   musicVolume: number;
-  hitVolume: number;
   showTiming: boolean;
   effects: boolean;
 }

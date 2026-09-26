@@ -1,6 +1,5 @@
 import type { Difficulty, Grade, SongRecord } from '../types';
 import { audioCtx } from '../audio/engine';
-import { playSfx } from '../audio/sfx';
 import { keyLabel, settings } from '../lib/settings';
 import { escapeHtml } from '../lib/util';
 import { Renderer, type Judgment, type RNote } from './render';
@@ -116,7 +115,7 @@ export class Game {
       </div>`;
     opts.mount.appendChild(this.el);
     this.canvas = this.el.querySelector('canvas')!;
-    this.renderer = new Renderer(this.canvas, { sideHud: true });
+    this.renderer = new Renderer(this.canvas);
     this.hud = {
       score: this.el.querySelector('.hud-score')!,
       acc: this.el.querySelector('.hud-acc')!,
@@ -320,7 +319,6 @@ export class Game {
     } else n.state = 'done';
     const chord = this.lastHitT === n.t;
     this.lastHitT = n.t;
-    playSfx('hit');
     this.register(kind, lane, err, false, chord);
   }
 
@@ -344,7 +342,6 @@ export class Game {
     this.weightSum += WEIGHT[kind];
     if (kind === 'miss') {
       const broke = this.combo >= 10;
-      if (broke) playSfx('break', settings.hitVolume * 0.9);
       this.combo = 0;
       this.renderer.miss(lane, broke);
       return;

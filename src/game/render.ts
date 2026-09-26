@@ -94,7 +94,7 @@ export class Renderer {
 
   constructor(
     private canvas: HTMLCanvasElement,
-    private opts: { centerX?: number; sideHud?: boolean; hud?: boolean } = {},
+    private opts: { centerX?: number; hud?: boolean } = {},
   ) {
     this.g = canvas.getContext('2d')!;
     for (let i = 0; i < 160; i++) this.stars.push(this.newStar(Math.random()));
@@ -520,7 +520,7 @@ export class Renderer {
     const ny = dx / len;
     const wh = this.noteR * h.s * 0.6;
     const wt = this.noteR * tl.s * 0.6;
-    // n points to one side of the lane; a0 → a1 clockwise sweeps the far (tail) side
+    // n points to one side of the lane; a0 → a1 clockwise sweeps the far end, giving the tail its curve
     const a0 = Math.atan2(ny, nx);
     const a1 = Math.atan2(-ny, -nx);
 
@@ -575,30 +575,6 @@ export class Renderer {
       }
     }
     g.restore();
-
-    // release cap: a solid half-disc closing the tail, dome facing away from the head.
-    // Brightens and pulses in the last moment so you know when to let go.
-    if (n.end! - st.t <= st.lookahead) {
-      const soon = holding ? Math.max(0, 1 - (n.end! - st.t) / 0.35) : 0;
-      const rr = wt * 1.3 * (1 + soon * 0.12 * (0.5 + 0.5 * Math.sin(now / 45)));
-      g.globalAlpha = dead ? 0.5 : 1;
-      g.beginPath();
-      g.arc(tl.x, tl.y, rr, a0, a1, false);
-      g.closePath();
-      g.fillStyle = soon > 0 ? lighten(color, soon * 0.45) : color;
-      g.fill();
-      g.lineWidth = Math.max(2.5, rr * 0.14);
-      g.strokeStyle = INK;
-      g.stroke();
-      // shine along the dome, like the note heads
-      g.beginPath();
-      g.arc(tl.x, tl.y, rr * 0.62, a0 + 0.5, a1 - 0.5, false);
-      g.strokeStyle = 'rgba(255,255,255,0.6)';
-      g.lineWidth = Math.max(1.5, rr * 0.14);
-      g.lineCap = 'round';
-      g.stroke();
-      g.globalAlpha = 1;
-    }
   }
 
   private drawEffects(now: number, dt: number, effects: boolean) {
@@ -662,19 +638,10 @@ export class Renderer {
     g.restore();
   }
 
-  /** In-game HUD sits beside the track (combo left, judgement right) so it never covers notes. */
-  private hudPos(side: -1 | 1, centerY: number) {
-    if (!this.opts.sideHud) return { x: this.cx, y: centerY };
-    const edge = this.proj(side * 2.2, 0.8);
-    const room = side < 0 ? edge.x : this.W - edge.x;
-    if (room > this.spacing * 1.7) return { x: edge.x + side * Math.min(room / 2, this.spacing * 1.25), y: edge.y - this.spacing * 0.5 };
-    // phone-width: no room at the sides, use the far end of the track where notes are still tiny
-    return { x: this.cx + side * this.spacing * 0.9, y: this.vpY + (this.baseY - this.vpY) * 0.14 };
-  }
-
   private drawCombo(st: FrameState, now: number, hype: number) {
     if (st.combo < 4) return;
-    const pos = this.hudPos(-1, this.vpY + (this.baseY - this.vpY) * 0.4);
+    // centred, in the upper part of the track where notes are still small
+    const pos = { x: this.cx, y: this.vpY + (this.baseY - this.vpY) * 0.28 };
     const y = pos.y;
     const bump = Math.max(0, 1 - (now - this.comboBorn) / 120);
     const size = this.spacing * (0.75 + bump * 0.12);
@@ -701,7 +668,7 @@ export class Renderer {
     const age = now - j.born;
     if (age > 550) return;
     const style = JUDGMENT_STYLE[j.kind];
-    const pos = this.hudPos(1, this.vpY + (this.baseY - this.vpY) * 0.62);
+    const pos = { x: this.cx, y: this.vpY + (this.baseY - this.vpY) * 0.47 };
     const y = pos.y;
     const pop = age < 90 ? 1.35 - (age / 90) * 0.35 : 1;
     const alpha = age > 380 ? 1 - (age - 380) / 170 : 1;
