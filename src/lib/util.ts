@@ -16,10 +16,6 @@ export function formatTime(sec: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-export function uid(): string {
-  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-}
-
 export function h<T extends HTMLElement = HTMLElement>(html: string): T {
   const t = document.createElement('template');
   t.innerHTML = html.trim();

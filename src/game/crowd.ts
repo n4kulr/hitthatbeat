@@ -36,6 +36,9 @@ export interface CrowdView {
 }
 
 const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
+/** #rrggbb + alpha → #rrggbbaa, clamped so a bad alpha can never throw inside the render loop. */
+const withAlpha = (hex: string, a: number) =>
+  hex + Math.round(Math.max(0, Math.min(1, a)) * 255).toString(16).padStart(2, '0');
 type Pt = { x: number; y: number };
 
 /**
@@ -101,7 +104,8 @@ export class Crowd {
     }
     const b0 = v.beats[lo - 1];
     const b1 = v.beats[lo] ?? (b0 ?? 0) + 0.5;
-    const f = b0 === undefined ? (v.t * 2) % 1 : Math.min(1, (v.t - b0) / Math.max(0.2, b1 - b0));
+    // game time is negative during the countdown, so wrap/clamp into 0..1
+    const f = b0 === undefined ? (((v.t * 2) % 1) + 1) % 1 : Math.max(0, Math.min(1, (v.t - b0) / Math.max(0.2, b1 - b0)));
     const pulse = Math.exp(-f * 5);
 
     this.drawBacklight(g, v, pulse, energy);
@@ -276,7 +280,7 @@ export class Crowd {
       const x = u * v.W;
       const y = v.H * 0.86;
       const grad = g.createRadialGradient(x, y, 0, x, y, v.W * 0.3);
-      grad.addColorStop(0, c + Math.round(a * 255).toString(16).padStart(2, '0'));
+      grad.addColorStop(0, withAlpha(c, a));
       grad.addColorStop(1, c + '00');
       g.fillStyle = grad;
       g.fillRect(x - v.W * 0.3, y - v.W * 0.3, v.W * 0.6, v.W * 0.6);
@@ -294,7 +298,7 @@ export class Crowd {
       const ang = -Math.PI / 2 + (u < 0.5 ? 0.35 : -0.35) + Math.sin(v.t * 0.7 + i * 1.7) * 0.3;
       const spread = 0.06;
       const grad = g.createLinearGradient(x, y, x + Math.cos(ang) * len, y + Math.sin(ang) * len);
-      grad.addColorStop(0, LANE[i] + Math.round(0x40 * k).toString(16).padStart(2, '0'));
+      grad.addColorStop(0, withAlpha(LANE[i], 0.25 * k));
       grad.addColorStop(1, LANE[i] + '00');
       g.fillStyle = grad;
       g.beginPath();

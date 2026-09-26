@@ -333,7 +333,6 @@ interface Onset {
   strength: number;
   local: number;
   centroid: number;
-  bands: number[];
   level: number;
   score: number;
 }
@@ -448,14 +447,13 @@ const CONFIGS: Record<Difficulty, DiffConfig> = {
   },
 };
 
-const LEVEL_WEIGHT = [1.3, 1.12, 1, 0.8];
+const LEVEL_WEIGHT = [1.3, 1.12, 1];
 
 interface Context {
   feats: Features;
   onsets: Onset[];
   grid: GridPoint[];
   beats: number[];
-  downbeat: number;
   loudThreshold: number;
 }
 
@@ -493,7 +491,7 @@ function selectTimes(ctx: Context, cfg: DiffConfig): Onset[] {
     const prevGap = j > 0 ? t - times[j - 1] : Infinity;
     const nextGap = j < times.length ? times[j] - t : Infinity;
     if (prevGap >= cfg.fillBeats * beatDur && nextGap >= gapAt(t) && fits(t)) {
-      insert({ t, frame: f, strength: 0.5, local: 1, centroid: feats.centroid[f], bands: [1, 0, 0, 0], level: 0, score: 0 });
+      insert({ t, frame: f, strength: 0.5, local: 1, centroid: feats.centroid[f], level: 0, score: 0 });
     }
   }
   return accepted;
@@ -668,7 +666,6 @@ export function analyze(samples: Float32Array, sr: number, progress: ProgressFn)
   const w = 3;
   const localMean = movingMean(env, Math.round(0.3 * fps), Math.round(0.3 * fps));
   const contextMean = movingMean(env, Math.round(3 * fps), Math.round(3 * fps));
-  const bandMeans = feats.flux.map((b) => mean(b) || 1);
   const peaks: { t: number; frame: number }[] = [];
   for (let i = 1; i < frames - 1; i++) {
     const v = env[i];
@@ -717,7 +714,6 @@ export function analyze(samples: Float32Array, sr: number, progress: ProgressFn)
       strength: env[i],
       local: env[i] / (contextMean[i] + 0.05),
       centroid: feats.centroid[cf] || feats.centroid[i],
-      bands: feats.flux.map((b, bi) => b[i] / bandMeans[bi]),
       level: g.level,
       score: 0,
     });
@@ -739,7 +735,6 @@ export function analyze(samples: Float32Array, sr: number, progress: ProgressFn)
     onsets,
     grid,
     beats,
-    downbeat,
     loudThreshold: median(rmsSorted) * 0.35,
   };
 

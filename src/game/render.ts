@@ -516,68 +516,85 @@ export class Renderer {
     const len = Math.hypot(dx, dy) || 1;
     const nx = -dy / len;
     const ny = dx / len;
-    const wh = this.noteR * h.s * 0.55;
-    const wt = this.noteR * tl.s * 0.55;
+    const wh = this.noteR * h.s * 0.6;
+    const wt = this.noteR * tl.s * 0.6;
+    // n points to one side of the lane; a0 → a1 clockwise sweeps the far (tail) side
+    const a0 = Math.atan2(ny, nx);
+    const a1 = Math.atan2(-ny, -nx);
 
     const holding = n.state === 'holding';
     const dead = n.state === 'missed' || n.state === 'dropped';
-    const color = dead ? '#4d475e' : LANE_COLORS[n.lane];
+    const color = dead ? '#6d6780' : LANE_COLORS[n.lane];
 
-    g.beginPath();
-    g.moveTo(h.x + nx * wh, h.y + ny * wh);
-    g.lineTo(tl.x + nx * wt, tl.y + ny * wt);
-    g.arc(tl.x, tl.y, wt, Math.atan2(ny, nx), Math.atan2(-ny, -nx), true);
-    g.lineTo(h.x - nx * wh, h.y - ny * wh);
-    g.closePath();
+    // body: one capsule from the head back to a rounded tail
+    const capsule = () => {
+      g.beginPath();
+      g.moveTo(h.x + nx * wh, h.y + ny * wh);
+      g.lineTo(tl.x + nx * wt, tl.y + ny * wt);
+      g.arc(tl.x, tl.y, wt, a0, a1, false);
+      g.lineTo(h.x - nx * wh, h.y - ny * wh);
+      g.closePath();
+    };
+    capsule();
     const lg = g.createLinearGradient(tl.x, tl.y, h.x, h.y);
-    lg.addColorStop(0, hexA(color, dead ? 0.35 : 0.5));
-    lg.addColorStop(1, hexA(color, dead ? 0.4 : holding ? 0.95 : 0.75));
+    lg.addColorStop(0, hexA(color, dead ? 0.3 : 0.55));
+    lg.addColorStop(1, hexA(color, dead ? 0.35 : holding ? 0.95 : 0.8));
     g.fillStyle = lg;
     g.fill();
     g.lineWidth = 2.5;
     g.strokeStyle = INK;
     g.stroke();
 
+    // soft light core down the middle
+    g.save();
+    capsule();
+    g.clip();
+    g.strokeStyle = `rgba(255,255,255,${dead ? 0.1 : holding ? 0.45 : 0.25})`;
+    g.lineWidth = Math.max(2, wt * 0.35);
+    g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(tl.x, tl.y);
+    g.lineTo(h.x, h.y);
+    g.stroke();
     if (holding) {
-      // marching stripes while held
-      const phase = (now / 90) % 1;
-      g.save();
-      g.clip();
-      g.strokeStyle = 'rgba(255,255,255,0.35)';
+      // energy flowing down toward the receptor while held
+      const phase = (now / 110) % 1;
+      g.strokeStyle = 'rgba(255,255,255,0.3)';
       g.lineWidth = 3;
-      for (let k = 0; k < 12; k++) {
-        const f = (k + phase) / 12;
+      for (let k = 0; k < 10; k++) {
+        const f = (k + phase) / 10;
+        const w = wt + (wh - wt) * f;
         const px = tl.x + dx * f;
         const py = tl.y + dy * f;
-        const w = wt + (wh - wt) * f;
         g.beginPath();
         g.moveTo(px + nx * w, py + ny * w);
         g.lineTo(px - nx * w, py - ny * w);
         g.stroke();
       }
-      g.restore();
     }
+    g.restore();
 
-    // release marker: a half-disc cap on the tail (flat edge across the lane), pulsing as the let-go point arrives
+    // release cap: a solid half-disc closing the tail, dome facing away from the head.
+    // Brightens and pulses in the last moment so you know when to let go.
     if (n.end! - st.t <= st.lookahead) {
       const soon = holding ? Math.max(0, 1 - (n.end! - st.t) / 0.35) : 0;
-      const rr = this.noteR * tl.s * 0.8 * (1 + soon * 0.15 * (0.5 + 0.5 * Math.sin(now / 45)));
-      const a0 = Math.atan2(ny, nx);
-      const a1 = Math.atan2(-ny, -nx);
+      const rr = wt * 1.3 * (1 + soon * 0.12 * (0.5 + 0.5 * Math.sin(now / 45)));
       g.globalAlpha = dead ? 0.5 : 1;
       g.beginPath();
-      g.arc(tl.x, tl.y, rr, a0, a1, true);
+      g.arc(tl.x, tl.y, rr, a0, a1, false);
       g.closePath();
-      g.fillStyle = soon > 0 ? lighten(color, soon * 0.5) : color;
+      g.fillStyle = soon > 0 ? lighten(color, soon * 0.45) : color;
       g.fill();
-      g.lineWidth = Math.max(2.5, rr * 0.16);
+      g.lineWidth = Math.max(2.5, rr * 0.14);
       g.strokeStyle = INK;
       g.stroke();
+      // shine along the dome, like the note heads
       g.beginPath();
-      g.arc(tl.x, tl.y, rr * 0.5, a0, a1, true);
-      g.closePath();
-      g.fillStyle = hexA(CREAM, dead ? 0.35 : 0.85);
-      g.fill();
+      g.arc(tl.x, tl.y, rr * 0.62, a0 + 0.5, a1 - 0.5, false);
+      g.strokeStyle = 'rgba(255,255,255,0.6)';
+      g.lineWidth = Math.max(1.5, rr * 0.14);
+      g.lineCap = 'round';
+      g.stroke();
       g.globalAlpha = 1;
     }
   }
