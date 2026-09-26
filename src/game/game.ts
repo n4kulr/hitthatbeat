@@ -116,7 +116,7 @@ export class Game {
       </div>`;
     opts.mount.appendChild(this.el);
     this.canvas = this.el.querySelector('canvas')!;
-    this.renderer = new Renderer(this.canvas);
+    this.renderer = new Renderer(this.canvas, { sideHud: true });
     this.hud = {
       score: this.el.querySelector('.hud-score')!,
       acc: this.el.querySelector('.hud-acc')!,

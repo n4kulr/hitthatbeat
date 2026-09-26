@@ -94,7 +94,7 @@ export class Renderer {
 
   constructor(
     private canvas: HTMLCanvasElement,
-    private opts: { centerX?: number } = {},
+    private opts: { centerX?: number; sideHud?: boolean } = {},
   ) {
     this.g = canvas.getContext('2d')!;
     for (let i = 0; i < 160; i++) this.stars.push(this.newStar(Math.random()));
@@ -620,24 +620,35 @@ export class Renderer {
     g.restore();
   }
 
+  /** In-game HUD sits beside the track (combo left, judgement right) so it never covers notes. */
+  private hudPos(side: -1 | 1, centerY: number) {
+    if (!this.opts.sideHud) return { x: this.cx, y: centerY };
+    const edge = this.proj(side * 2.2, 0.8);
+    const room = side < 0 ? edge.x : this.W - edge.x;
+    if (room > this.spacing * 1.7) return { x: edge.x + side * Math.min(room / 2, this.spacing * 1.25), y: edge.y - this.spacing * 0.5 };
+    // phone-width: no room at the sides, use the far end of the track where notes are still tiny
+    return { x: this.cx + side * this.spacing * 0.9, y: this.vpY + (this.baseY - this.vpY) * 0.14 };
+  }
+
   private drawCombo(st: FrameState, now: number, hype: number) {
     if (st.combo < 4) return;
-    const y = this.vpY + (this.baseY - this.vpY) * 0.4;
+    const pos = this.hudPos(-1, this.vpY + (this.baseY - this.vpY) * 0.4);
+    const y = pos.y;
     const bump = Math.max(0, 1 - (now - this.comboBorn) / 120);
     const size = this.spacing * (0.75 + bump * 0.12);
     const color = hype === 2 ? `hsl(${(now / 6) % 360},100%,72%)` : hype === 1 ? LANE_COLORS[1] : CREAM;
-    this.stickerText(String(st.combo), this.cx, y, size, color, 0, 0.95);
+    this.stickerText(String(st.combo), pos.x, y, size, color, 0, 0.95);
     this.g.font = `700 ${Math.round(this.spacing * 0.16)}px Rubik, sans-serif`;
     this.g.fillStyle = hexA(CREAM, 0.7);
     this.g.textAlign = 'center';
-    this.g.fillText('COMBO', this.cx, y + size * 0.62);
+    this.g.fillText('COMBO', pos.x, y + size * 0.62);
 
     if (this.milestone) {
       const k = (now - this.milestone.born) / 1100;
       if (k > 1) this.milestone = null;
       else {
         const s = this.spacing * 0.5 * (1 + (1 - Math.min(1, k * 5)) * 0.6);
-        this.stickerText(this.milestone.text, this.cx, y - this.spacing * 0.75 - k * 30, s, LANE_COLORS[0], -0.06, 1 - k * k);
+        this.stickerText(this.milestone.text, pos.x, y - this.spacing * 0.75 - k * 30, s, LANE_COLORS[0], -0.06, 1 - k * k);
       }
     }
   }
@@ -648,18 +659,19 @@ export class Renderer {
     const age = now - j.born;
     if (age > 550) return;
     const style = JUDGMENT_STYLE[j.kind];
-    const y = this.vpY + (this.baseY - this.vpY) * 0.62;
+    const pos = this.hudPos(1, this.vpY + (this.baseY - this.vpY) * 0.62);
+    const y = pos.y;
     const pop = age < 90 ? 1.35 - (age / 90) * 0.35 : 1;
     const alpha = age > 380 ? 1 - (age - 380) / 170 : 1;
     const rot = j.kind === 'miss' ? 0.08 : -0.04;
-    this.stickerText(style.label, this.cx, y - Math.min(age, 200) * 0.04, this.spacing * 0.42 * pop, style.color, rot, alpha);
+    this.stickerText(style.label, pos.x, y - Math.min(age, 200) * 0.04, this.spacing * 0.42 * pop, style.color, rot, alpha);
     if (showTiming && j.kind !== 'perfect' && j.kind !== 'miss') {
       const g = this.g;
       g.globalAlpha = alpha;
       g.font = `700 ${Math.round(this.spacing * 0.14)}px Rubik, sans-serif`;
       g.fillStyle = j.err < 0 ? '#8fd3ff' : '#ffb27a';
       g.textAlign = 'center';
-      g.fillText(j.err < 0 ? 'EARLY' : 'LATE', this.cx, y + this.spacing * 0.33);
+      g.fillText(j.err < 0 ? 'EARLY' : 'LATE', pos.x, y + this.spacing * 0.33);
       g.globalAlpha = 1;
     }
   }
