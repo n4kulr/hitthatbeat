@@ -76,10 +76,10 @@ export class Home {
         <div class="scrim"></div>
 
         <aside class="panel">
-          <div class="eyebrow"><span class="live-dot"></span>rhythm game for any song</div>
           <h1 class="logo" aria-label="hit that beat">
             <span class="l1">hit</span><span class="l2">that</span><span class="l3">beat</span>
           </h1>
+          <p class="tagline">Turn any song into a four-lane chart and play it.</p>
 
           <form class="omni">
             <span class="omni-icon">${ICON_SEARCH}</span>
@@ -89,18 +89,18 @@ export class Home {
           <div class="alt-row">
             <label class="chip">
               <input type="file" accept="audio/*,.mp3,.wav,.flac,.ogg,.m4a,.opus" hidden />
-              ${ICON_FILE}<span>drop or pick a file</span>
+              ${ICON_FILE}<span>open audio file</span>
             </label>
-            <button class="chip" data-act="demo"><span class="chip-dot"></span><span>demo track</span></button>
+            <button class="chip" data-act="demo"><span>try the demo track</span></button>
           </div>
 
           <section class="list">
             <div class="list-head">
               <div class="tabs">
-                <button class="tab active" data-tab="crate">crate <span class="count">0</span></button>
+                <button class="tab active" data-tab="crate">library <span class="count">0</span></button>
                 <button class="tab" data-tab="results" hidden>results</button>
               </div>
-              <input class="filter" placeholder="filter" spellcheck="false" />
+              <input class="filter" placeholder="filter…" spellcheck="false" />
             </div>
             <div class="list-body crate-body"></div>
             <div class="list-body results-body" hidden></div>
@@ -108,12 +108,12 @@ export class Home {
 
           <footer class="panel-foot">
             <span class="foot-keys"></span>
-            <span>esc pause · audio stays on your machine</span>
+            <span>audio never leaves your device</span>
           </footer>
         </aside>
 
         <button class="icon-btn settings-btn" data-act="settings" aria-label="settings">${ICON_GEAR}</button>
-        <div class="demo-tag"><span class="blink"></span>demo play<em>pick a song to play for real</em></div>
+        <div class="demo-tag">autoplay preview</div>
       </div>`);
 
     this.crateBody = this.el.querySelector('.crate-body')!;
@@ -236,7 +236,7 @@ export class Home {
     if (!this.songs.length) {
       this.crateBody.innerHTML = `
         <div class="empty">
-          <div class="empty-title">nothing in the crate yet</div>
+          <div class="empty-title">your library is empty</div>
           <p>search a song above, drop an audio file anywhere, or warm up with the <button class="inline-link" data-act="demo">demo track</button>.</p>
         </div>`;
       return;
@@ -250,7 +250,6 @@ export class Home {
         const best = bestGrade(s);
         return `
           <button class="row" data-song="${escapeHtml(s.id)}" style="--i:${i}; --c:${laneColor(s.id)}">
-            <span class="row-n">${String(i + 1).padStart(2, '0')}</span>
             <span class="row-cover"><img src="${escapeHtml(coverFor(s))}" alt="" loading="lazy" /></span>
             <span class="row-text"><b>${escapeHtml(s.title)}</b><small>${escapeHtml(s.artist || (s.source === 'file' ? 'local file' : '—'))}</small></span>
             <span class="row-meta"><span>${Math.round(s.analysis.bpm)} bpm</span><span>${formatTime(s.analysis.duration)}</span></span>
@@ -281,7 +280,6 @@ export class Home {
           const clean = cleanYouTubeTitle(r.title, r.artist);
           return `
             <button class="row" data-yt="${r.id}" data-title="${escapeHtml(clean.title)}" data-artist="${escapeHtml(clean.artist)}" data-thumb="${escapeHtml(r.thumb)}" style="--i:${i}; --c:${laneColor(r.id)}">
-              <span class="row-n">${String(i + 1).padStart(2, '0')}</span>
               <span class="row-cover wide"><img src="${escapeHtml(r.thumb)}" alt="" loading="lazy" /></span>
               <span class="row-text"><b>${escapeHtml(clean.title)}</b><small>${escapeHtml(clean.artist || r.artist)}</small></span>
               <span class="row-meta"><span>${r.duration ? formatTime(r.duration) : ''}</span></span>
@@ -322,7 +320,7 @@ export class Home {
           <button class="close" aria-label="close">×</button>
           <div class="sm-cover"><img src="${cover}" alt="" /></div>
           <div class="sm-body">
-            <div class="eyebrow"><span class="live-dot"></span>${song.source === 'youtube' ? 'from youtube' : song.source === 'demo' ? 'built-in' : 'local file'} · ${Math.round(a.bpm)} bpm · ${formatTime(a.duration)}</div>
+            <div class="sm-meta">${song.source === 'youtube' ? 'from youtube' : song.source === 'demo' ? 'built-in' : 'local file'} · ${Math.round(a.bpm)} bpm · ${formatTime(a.duration)}</div>
             <h2 class="sm-title">${escapeHtml(song.title)}</h2>
             <div class="sm-artist">${escapeHtml(song.artist || '—')}</div>
             <div class="diff-grid">
