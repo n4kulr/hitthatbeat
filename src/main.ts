@@ -33,6 +33,7 @@ const home = new Home({
   },
 });
 app.appendChild(home.el);
+home.show();
 
 async function refresh() {
   songs = await db.all();
@@ -191,7 +192,7 @@ async function play(song: SongRecord, diff: Difficulty) {
   }
   inGame = true;
   wipe(() => {
-    home.el.hidden = true;
+    home.hide();
     const game = new Game({
       song,
       buffer,
@@ -230,7 +231,7 @@ async function play(song: SongRecord, diff: Difficulty) {
 
 function showHome() {
   inGame = false;
-  home.el.hidden = false;
+  home.show();
   refresh();
 }
 

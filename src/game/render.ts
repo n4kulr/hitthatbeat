@@ -90,7 +90,10 @@ export class Renderer {
   private edgeFlash = 0;
   private lastFrame = performance.now();
 
-  constructor(private canvas: HTMLCanvasElement) {
+  constructor(
+    private canvas: HTMLCanvasElement,
+    private opts: { centerX?: number } = {},
+  ) {
     this.g = canvas.getContext('2d')!;
     for (let i = 0; i < 160; i++) this.stars.push(this.newStar(Math.random()));
     this.resize();
@@ -104,7 +107,7 @@ export class Renderer {
     this.canvas.width = Math.round(rect.width * dpr);
     this.canvas.height = Math.round(rect.height * dpr);
     this.g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.cx = this.W / 2;
+    this.cx = this.W * (this.W < 1000 ? 0.5 : (this.opts.centerX ?? 0.5));
     this.vpY = this.H * 0.08;
     this.baseY = this.H * 0.83;
     this.spacing = Math.min(this.W * 0.14, this.H * 0.17, 150);
