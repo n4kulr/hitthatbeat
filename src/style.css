@@ -11,7 +11,7 @@
   --lilac: #c77dff;
   --display: 'Rubik', system-ui, sans-serif;
   --mono: 'Rubik', system-ui, sans-serif;
-  /* arcade signage face for the logo and big game moments */
+  /* arcade signage face for the big game moments */
   --arcade: 'Bungee', 'Rubik', sans-serif;
   --pop: cubic-bezier(0.2, 1.5, 0.4, 1);
   /* glass: light frosted panels over the dusty-purple stage */
@@ -192,59 +192,33 @@ kbd {
   padding: 36px 36px 24px;
 }
 
-.logo {
+/* the four lanes, as the page's mark */
+.lanes {
   display: flex;
-  gap: 8px;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
-  font-size: 80px;
-  font-weight: 800;
-  line-height: 0.9;
-  letter-spacing: -0.04em;
-  text-transform: uppercase;
-  user-select: none;
+  gap: 6px;
 }
-/* one letter per lane, each sitting on its lane bar; they ripple on the demo's beat */
-.logo i {
-  display: flex;
-  flex-direction: column;
-  font-style: normal;
-  color: var(--pink);
-  transform: translateY(calc(var(--pulse, 0) * -6px));
-  transition: transform 0.08s linear;
+.lanes i {
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--pink);
 }
-.logo i::after {
-  content: '';
-  height: 7px;
-  margin-top: 12px;
-  border-radius: 4px;
-  background: currentColor;
+.lanes i:nth-child(2) {
+  background: var(--lemon);
 }
-.logo i:nth-child(2) {
-  color: var(--lemon);
-  transition-delay: 0.03s;
+.lanes i:nth-child(3) {
+  background: var(--mint);
 }
-.logo i:nth-child(3) {
-  color: var(--mint);
-  transition-delay: 0.06s;
+.lanes i:nth-child(4) {
+  background: var(--peri);
 }
-.logo i:nth-child(4) {
-  color: var(--peri);
-  transition-delay: 0.09s;
-}
-
-/* logo row: JUKE on the left, boombox flush with the drop box's right edge */
-.brand {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-}
-.boombox {
-  height: 72px;
-  flex-shrink: 0;
-  margin-left: auto;
-  color: var(--fg-2);
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .tagline {
   margin: -4px 0 4px;
@@ -576,12 +550,6 @@ body.dragging .drop {
   .demo-tag,
   .panel-foot > span:last-child {
     display: none;
-  }
-  .logo {
-    font-size: 60px;
-  }
-  .boombox {
-    height: 72px;
   }
   .icon-btn {
     top: 16px;

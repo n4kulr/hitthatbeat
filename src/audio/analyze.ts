@@ -1,7 +1,7 @@
 import type { Analysis, ChartInfo, Difficulty, Lane, Note } from '../types';
 
 /** Bump when chart generation changes so stored songs get re-analyzed. */
-export const ANALYZER_VERSION = 2;
+export const ANALYZER_VERSION = 3;
 
 export type ProgressFn = (stage: string, pct: number) => void;
 
@@ -105,6 +105,8 @@ interface Features {
   tonal: Float32Array;
   centroid: Float32Array;
   rms: Float32Array;
+  /** how much the set of sounding pitches changed: new melody/vocal notes, not drums */
+  pitch: Float32Array;
 }
 
 function extractFeatures(x: Float32Array, sr: number, progress: ProgressFn): Features {
@@ -117,6 +119,13 @@ function extractFeatures(x: Float32Array, sr: number, progress: ProgressFn): Fea
   const edges = [bin(30), bin(150), bin(600), bin(3000), bin(10000)];
   const tonalLo = bin(150);
   const tonalHi = bin(3000);
+  // pitch class (0-11) of each bin in the melodic range, for chroma
+  const chromaLo = bin(200);
+  const chromaHi = bin(2000);
+  const pc = new Int8Array(N / 2 + 1);
+  for (let k = chromaLo; k < chromaHi; k++) pc[k] = (((Math.round(12 * Math.log2((k * sr) / N / 440)) % 12) + 12) % 12);
+  const K = chromaHi - chromaLo;
+  const melMag = new Float32Array(frames * K); // magnitudes in the melodic range, kept for HPSS
 
   const flux = [0, 1, 2, 3].map(() => new Float32Array(frames));
   const tonal = new Float32Array(frames);
@@ -146,18 +155,18 @@ function extractFeatures(x: Float32Array, sr: number, progress: ProgressFn): Fea
     let tonalSum = 0;
     let cNum = 0;
     let cDen = 0;
+
     for (let k = 0; k < half; k++) {
       const mag = Math.sqrt(re[k] * re[k] + im[k] * im[k]);
       cur[k] = Math.log1p(10 * mag);
       if (k >= tonalLo && k < tonalHi) tonalSum += mag;
+      if (k >= chromaLo && k < chromaHi) melMag[f * K + k - chromaLo] = mag;
       if (k >= tonalLo && k < edges[4]) {
         cNum += mag * k * binHz;
         cDen += mag;
       }
     }
     tonal[f] = Math.log1p(tonalSum);
-    centroid[f] = cDen > 1e-6 ? cNum / cDen : 0;
-
     if (f > 0) {
       for (let b = 0; b < 4; b++) {
         let sum = 0;
@@ -175,7 +184,54 @@ function extractFeatures(x: Float32Array, sr: number, progress: ProgressFn): Fea
     cur = t;
     if (f % reportEvery === 0) progress('listening', f / frames);
   }
-  return { fps: sr / HOP, frames, flux, tonal, centroid, rms };
+  const pitch = pitchChange(melMag, frames, K, chromaLo, pc);
+  return { fps: sr / HOP, frames, flux, tonal, centroid, rms, pitch };
+}
+
+/**
+ * Melody onsets: how much the set of sounding pitches changes. Drum hits are removed first
+ * by keeping each bin's median over ~120ms (a tone lasts, a drum transient doesn't), then
+ * chroma is compared as a distribution so loudness alone doesn't count as change.
+ */
+function pitchChange(mag: Float32Array, frames: number, K: number, lo: number, pc: Int8Array): Float32Array {
+  const R = 5;
+  const harm = new Float32Array(frames * K);
+  const win = new Float32Array(2 * R + 1);
+  for (let k = 0; k < K; k++) {
+    for (let f = 0; f < frames; f++) {
+      let n = 0;
+      for (let j = Math.max(0, f - R); j <= Math.min(frames - 1, f + R); j++) win[n++] = mag[j * K + k];
+      const w = win.subarray(0, n).sort();
+      harm[f * K + k] = w[n >> 1];
+    }
+  }
+  const out = new Float32Array(frames);
+  const energy = new Float32Array(frames);
+  let prev = new Float32Array(12);
+  let cur = new Float32Array(12);
+  for (let f = 0; f < frames; f++) {
+    cur.fill(0);
+    for (let k = 0; k < K; k++) {
+      const m = harm[f * K + k];
+      cur[pc[k + lo]] += m * m;
+    }
+    let sum = 0;
+    for (let c = 0; c < 12; c++) sum += cur[c];
+    energy[f] = sum;
+    if (sum > 1e-9) {
+      for (let c = 0; c < 12; c++) cur[c] /= sum;
+      if (f > 0) for (let c = 0; c < 12; c++) out[f] += Math.max(0, cur[c] - prev[c]);
+      // a new note adds tone; a fading one only shifts the balance — don't count fades
+      if (energy[f] < energy[f - 1] * 0.98) out[f] *= 0.2;
+    }
+    const t = prev;
+    prev = cur;
+    cur = t;
+  }
+  // near-silent frames have meaningless chroma: scale change by how much tone is present
+  const eMed = median(Array.from(energy).filter((e) => e > 1e-9)) || 1;
+  for (let f = 0; f < frames; f++) out[f] *= Math.min(1.5, Math.sqrt(energy[f] / eMed));
+  return out;
 }
 
 // ---------------------------------------------------------------- tempo & beats
@@ -331,8 +387,9 @@ interface Onset {
   t: number;
   frame: number;
   strength: number;
-  local: number;
   centroid: number;
+  /** how strongly the melody/vocal changed pitch here (0 = drums only) */
+  melody: number;
   level: number;
   score: number;
 }
@@ -378,7 +435,6 @@ function nearestGrid(grid: GridPoint[], t: number): GridPoint {
 // ---------------------------------------------------------------- charts
 
 interface DiffConfig {
-  levels: number[];
   minGap: number;
   minGapBeats: number;
   keepFrac: number;
@@ -390,11 +446,13 @@ interface DiffConfig {
   /** holds may overlap notes in other lanes */
   holdOverlap: boolean;
   jackGap: number;
+  /** how much drum hits vs melody notes count; the easy charts follow the tune */
+  drumWeight: number;
+  melodyWeight: number;
 }
 
 const CONFIGS: Record<Difficulty, DiffConfig> = {
   easy: {
-    levels: [0, 1],
     minGap: 0.42,
     minGapBeats: 0.98,
     keepFrac: 0.6,
@@ -405,9 +463,10 @@ const CONFIGS: Record<Difficulty, DiffConfig> = {
     holdMaxBeats: 3,
     holdOverlap: false,
     jackGap: 0.4,
+    drumWeight: 0.5,
+    melodyWeight: 2.5,
   },
   normal: {
-    levels: [0, 1],
     minGap: 0.24,
     minGapBeats: 0.49,
     keepFrac: 0.78,
@@ -418,9 +477,10 @@ const CONFIGS: Record<Difficulty, DiffConfig> = {
     holdMaxBeats: 4,
     holdOverlap: false,
     jackGap: 0.3,
+    drumWeight: 0.75,
+    melodyWeight: 1.8,
   },
   hard: {
-    levels: [0, 1, 2],
     minGap: 0.15,
     minGapBeats: 0.24,
     keepFrac: 0.9,
@@ -431,9 +491,10 @@ const CONFIGS: Record<Difficulty, DiffConfig> = {
     holdMaxBeats: 3,
     holdOverlap: true,
     jackGap: 0.24,
+    drumWeight: 1,
+    melodyWeight: 1.3,
   },
   expert: {
-    levels: [0, 1, 2],
     minGap: 0.1,
     minGapBeats: 0.24,
     keepFrac: 1,
@@ -444,6 +505,8 @@ const CONFIGS: Record<Difficulty, DiffConfig> = {
     holdMaxBeats: 3,
     holdOverlap: true,
     jackGap: 0.18,
+    drumWeight: 1,
+    melodyWeight: 1,
   },
 };
 
@@ -454,16 +517,13 @@ interface Context {
   onsets: Onset[];
   grid: GridPoint[];
   beats: number[];
-  loudThreshold: number;
 }
 
 function selectTimes(ctx: Context, cfg: DiffConfig): Onset[] {
-  const pool = ctx.onsets.filter((o) => cfg.levels.includes(o.level));
-  const cut = quantile(
-    pool.map((o) => o.score),
-    1 - cfg.keepFrac,
-  );
-  const sorted = pool.filter((o) => o.score >= cut).sort((a, b) => b.score - a.score);
+  const score = (o: Onset) => LEVEL_WEIGHT[o.level] * (o.strength * cfg.drumWeight + o.melody * cfg.melodyWeight);
+  const pool = ctx.onsets;
+  const cut = quantile(pool.map(score), 1 - cfg.keepFrac);
+  const sorted = pool.filter((o) => score(o) >= cut).sort((a, b) => score(b) - score(a));
   const accepted: Onset[] = [];
   const times: number[] = [];
   const gapAt = (t: number) => Math.max(cfg.minGap, cfg.minGapBeats * nearestGrid(ctx.grid, t).beatDur);
@@ -479,20 +539,19 @@ function selectTimes(ctx: Context, cfg: DiffConfig): Onset[] {
   };
   for (const o of sorted) if (fits(o.t)) insert(o);
 
-  // Fill long quiet-onset stretches with on-beat notes while music is playing,
-  // so pads/vocals-heavy sections still have something to hit.
-  const { feats } = ctx;
+  // Long gaps: fall back to the quieter real hits that land on a beat. Never invent a
+  // note where nothing is playing.
+  const onsetTimes = ctx.onsets.map((o) => o.t);
   for (let i = 0; i < ctx.beats.length; i++) {
     const t = ctx.beats[i];
     const beatDur = (ctx.beats[i + 1] ?? t + 0.5) - t;
-    const f = Math.min(feats.frames - 1, Math.round(t * feats.fps));
-    if (feats.rms[f] < ctx.loudThreshold) continue;
+    const k = lowerBound(onsetTimes, t - 0.02);
+    const real = ctx.onsets[k];
+    if (!real || real.t > t + 0.02) continue;
     const j = lowerBound(times, t);
     const prevGap = j > 0 ? t - times[j - 1] : Infinity;
     const nextGap = j < times.length ? times[j] - t : Infinity;
-    if (prevGap >= cfg.fillBeats * beatDur && nextGap >= gapAt(t) && fits(t)) {
-      insert({ t, frame: f, strength: 0.5, local: 1, centroid: feats.centroid[f], level: 0, score: 0 });
-    }
+    if (prevGap >= cfg.fillBeats * beatDur && nextGap >= gapAt(t) && fits(real.t)) insert(real);
   }
   return accepted;
 }
@@ -662,27 +721,58 @@ export function analyze(samples: Float32Array, sr: number, progress: ProgressFn)
   const beatFrames = trackBeats(env, fps, bpmGuess);
   const frameTime = (f: number) => (f * HOP + N / 2) / sr;
 
-  // onset peak picking, each peak moved to its real attack in the samples
+  // Onsets per band (kick, low-mid, snare/vocal, hats) plus pitch change (melody), each
+  // judged against its own recent level — so a hat or a vocal note counts even while a
+  // loud kick dominates.
+  const PITCH = 4;
+  const BAND_WEIGHT = [1, 0.75, 1, 0.8, 1];
   const w = 3;
-  const localMean = movingMean(env, Math.round(0.3 * fps), Math.round(0.3 * fps));
-  const contextMean = movingMean(env, Math.round(3 * fps), Math.round(3 * fps));
-  const peaks: { t: number; frame: number }[] = [];
-  for (let i = 1; i < frames - 1; i++) {
-    const v = env[i];
-    if (v < localMean[i] * 1.25 + 0.2) continue;
-    let isMax = true;
-    for (let k = Math.max(0, i - w); k <= Math.min(frames - 1, i + w); k++) {
-      if (env[k] > v || (k < i && env[k] === v)) {
-        isMax = false;
-        break;
+  const rmsMed = median(Array.from(feats.rms).filter((r) => r > 1e-4)) || 1e-3;
+  const cands: { t: number; frame: number; sal: number; band: number }[] = [];
+  [...feats.flux, feats.pitch].forEach((band, bi) => {
+    const around = movingMean(band, Math.round(0.5 * fps), Math.round(0.5 * fps));
+    // pitch change is already on a fixed 0..1 scale: a real new note reads ~0.4-0.8, drum
+    // leakage and fades ~0.01-0.05. The spectral bands only make sense relative to themselves.
+    const resting = median(Array.from(band));
+    const floor = bi === PITCH ? 0.15 : resting * 2;
+    for (let i = 1; i < frames - 1; i++) {
+      const v = band[i];
+      if (v <= floor) continue;
+      // near-silence shouldn't make every wobble look huge: the baseline never drops below
+      // half the band's resting level
+      const prominence = bi === PITCH ? v / 0.5 : v / Math.max(around[i], resting * 0.5, 1e-6);
+      if (bi !== PITCH && prominence < 1.5) continue;
+      let isMax = true;
+      for (let k = Math.max(0, i - w); k <= Math.min(frames - 1, i + w); k++) {
+        if (band[k] > v || (k < i && band[k] === v)) {
+          isMax = false;
+          break;
+        }
       }
+      if (!isMax) continue;
+      // quiet passages still get charted, just a little less eagerly than loud ones
+      const loud = Math.min(1.4, Math.max(0.5, Math.sqrt(feats.rms[i] / rmsMed)));
+      cands.push({ t: frameTime(i), frame: i, sal: prominence * BAND_WEIGHT[bi] * loud, band: bi });
     }
-    if (isMax) peaks.push({ t: refineOnset(samples, sr, frameTime(i)), frame: i });
+  });
+  // Put the bands on one scale: a typical hit in any band scores ~1, so a quiet melody
+  // note can compete with a kick that spikes far harder in absolute terms.
+  for (let bi = 0; bi < PITCH; bi++) {
+    const typical = median(cands.filter((c) => c.band === bi).map((c) => c.sal)) || 1;
+    for (const c of cands) if (c.band === bi) c.sal /= typical;
   }
+  // under half a typical hit is texture, not a note
+  const hits = cands.filter((c) => c.sal >= 0.5);
+
+  // kick + snare attacks, moved to where they really start, anchor the beat grid
+  const attacks = hits
+    .filter((c) => c.band === 0 || c.band === 2)
+    .map((c) => refineOnset(samples, sr, c.t))
+    .sort((x, y) => x - y);
 
   const beats = fitBeats(
     beatFrames.map(frameTime),
-    peaks.map((p) => p.t),
+    attacks,
     60 / bpmGuess,
   );
   const intervals = beats.slice(1).map((b, i) => b - beats[i]);
@@ -703,40 +793,34 @@ export function analyze(samples: Float32Array, sr: number, progress: ProgressFn)
   // every note sits on the 16th grid; anything between grid lines is noise, not rhythm
   progress('picking the hits', 0);
   const grid = buildGrid(beats, duration);
-  const raw: Onset[] = [];
-  for (const { t, frame: i } of peaks) {
-    const g = nearestGrid(grid, t);
-    if (Math.abs(g.t - t) > g.beatDur / 8 + 0.01) continue;
-    const cf = Math.min(frames - 1, i + 1);
-    raw.push({
-      t: g.t,
-      frame: i,
-      strength: env[i],
-      local: env[i] / (contextMean[i] + 0.05),
-      centroid: feats.centroid[cf] || feats.centroid[i],
-      level: g.level,
-      score: 0,
-    });
+  // Snap every detector's hits to the 16th grid. Drum bands landing on the same spot stack
+  // into a stronger accent (kick + hat); pitch change is kept apart as the melody strength.
+  const at = new Map<GridPoint, { o: Onset; peak: number; extra: number }>();
+  for (const c of hits) {
+    const g = nearestGrid(grid, c.t);
+    let cur = at.get(g);
+    if (!cur) {
+      const o: Onset = { t: g.t, frame: c.frame, strength: 0, centroid: 0, melody: 0, level: g.level, score: 0 };
+      at.set(g, (cur = { o, peak: 0, extra: 0 }));
+    }
+    if (c.band === PITCH) cur.o.melody = Math.max(cur.o.melody, c.sal);
+    else if (c.sal > cur.peak) {
+      cur.extra += cur.peak * 0.35;
+      cur.peak = c.sal;
+      cur.o.frame = c.frame;
+    } else cur.extra += c.sal * 0.35;
   }
-  // merge onsets that snapped to the same grid point
-  const onsets: Onset[] = [];
-  for (const o of raw) {
-    const last = onsets[onsets.length - 1];
-    if (last && Math.abs(last.t - o.t) < 0.03) {
-      if (o.strength > last.strength) onsets[onsets.length - 1] = o;
-    } else onsets.push(o);
-  }
-  for (const o of onsets) o.score = Math.sqrt(o.strength) * Math.sqrt(o.local) * LEVEL_WEIGHT[o.level];
+  const onsets = [...at.values()]
+    .map(({ o, peak, extra }) => {
+      o.strength = peak + extra;
+      o.centroid = feats.centroid[Math.min(frames - 1, o.frame + 1)] || feats.centroid[o.frame];
+      o.score = LEVEL_WEIGHT[o.level] * (o.strength + o.melody);
+      return o;
+    })
+    .sort((x, y) => x.t - y.t);
   progress('picking the hits', 1);
 
-  const rmsSorted = Array.from(feats.rms).filter((r) => r > 1e-4);
-  const ctx: Context = {
-    feats,
-    onsets,
-    grid,
-    beats,
-    loudThreshold: median(rmsSorted) * 0.35,
-  };
+  const ctx: Context = { feats, onsets, grid, beats };
 
   const charts = {} as Record<Difficulty, ChartInfo>;
   (['easy', 'normal', 'hard', 'expert'] as Difficulty[]).forEach((d, i) => {

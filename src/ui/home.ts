@@ -43,19 +43,8 @@ export class Home {
         <canvas class="attract"></canvas>
 
         <aside class="panel">
-          <div class="brand">
-            <h1 class="logo" aria-label="juke">
-              <i>j</i><i>u</i><i>k</i><i>e</i>
-            </h1>
-            <svg class="boombox" viewBox="0 0 120 80" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M38 14 V9 a5 5 0 0 1 5 -5 h34 a5 5 0 0 1 5 5 V14" stroke-linecap="round" />
-              <rect x="1" y="14" width="118" height="65" rx="12" />
-              <circle cx="32" cy="47" r="17" />
-              <circle cx="32" cy="47" r="5" />
-              <circle cx="88" cy="47" r="17" />
-              <circle cx="88" cy="47" r="5" />
-            </svg>
-          </div>
+          <h1 class="sr-only">juke</h1>
+          <div class="lanes" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
           <p class="tagline">Turn any song into a four-lane chart and play it.</p>
 
           <label class="drop">

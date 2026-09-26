@@ -62,6 +62,8 @@ export class Game {
   private startAt = 0;
   private clockOffset = NaN;
   private bass = 0;
+  private lastFrame = 0;
+  private frameMs = 16.7;
 
   private pressed = [false, false, false, false];
   private holding: (RNote | null)[] = [null, null, null, null];
@@ -219,6 +221,11 @@ export class Game {
   private frame(now: number) {
     if (!this.paused) this.syncClock();
     const t = this.songTime(now);
+    // A frame drawn now reaches the screen one refresh later, so draw where the song will
+    // be then; otherwise notes look a frame behind the music. Judging still uses real time.
+    if (this.lastFrame) this.frameMs += (Math.min(50, now - this.lastFrame) - this.frameMs) * 0.05;
+    this.lastFrame = now;
+    const drawT = this.paused ? t : t + this.frameMs / 1000;
 
     if (!this.paused) {
       this.processMisses(t);
@@ -246,7 +253,7 @@ export class Game {
     this.bass += (level - this.bass) * 0.3;
 
     this.renderer.draw({
-      t,
+      t: drawT,
       lookahead: this.lookahead,
       notes: this.notes,
       from: this.from,

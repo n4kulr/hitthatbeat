@@ -31,6 +31,9 @@ export function showResults(mount: HTMLElement, song: SongRecord, r: GameResult,
     `<div class="count-row count-${k}"><span>${label}</span><div class="count-bar"><i style="--w:${r.counts[k] / maxCount}"></i></div><b>${r.counts[k]}</b></div>`;
   const mean = Math.round(r.meanErrorMs);
   const canFix = r.errors.length >= 20 && Math.abs(mean) >= 8;
+  // consistent early/late hits mean the audio path has latency: correct it automatically
+  const offsetBefore = settings.offsetMs;
+  if (canFix) saveSettings({ offsetMs: Math.max(-250, Math.min(250, offsetBefore + mean)) });
 
   const el = h(`
     <div class="results">
@@ -59,8 +62,8 @@ export function showResults(mount: HTMLElement, song: SongRecord, r: GameResult,
         <div class="res-hist-legend"><span>early</span><span>late</span></div>
         ${
           canFix
-            ? `<div class="offset-tip">you hit <b>${Math.abs(mean)}ms ${mean > 0 ? 'late' : 'early'}</b> on average.
-               <button class="btn btn-small" data-act="fix">fix my offset</button></div>`
+            ? `<div class="offset-tip">you were hitting <b>${Math.abs(mean)}ms ${mean > 0 ? 'late' : 'early'}</b>, so timing is now shifted to match you.
+               <button class="btn btn-small" data-act="undo">undo</button></div>`
             : ''
         }
         <div class="res-actions">
@@ -99,9 +102,9 @@ export function showResults(mount: HTMLElement, song: SongRecord, r: GameResult,
     const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
     if (act === 'retry') done(actions.onRetry);
     if (act === 'back') done(actions.onBack);
-    if (act === 'fix') {
-      saveSettings({ offsetMs: Math.max(-250, Math.min(250, settings.offsetMs + mean)) });
-      toast(`offset is now ${settings.offsetMs > 0 ? '+' : ''}${settings.offsetMs}ms`);
+    if (act === 'undo') {
+      saveSettings({ offsetMs: offsetBefore });
+      toast(`offset back to ${offsetBefore > 0 ? '+' : ''}${offsetBefore}ms`);
       el.querySelector('.offset-tip')?.remove();
     }
   });

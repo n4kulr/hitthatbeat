@@ -97,7 +97,6 @@ export class Attract {
     }
 
     const pulse = Math.exp(-((t - 1 + BEAT * 100) % BEAT) * 7);
-    document.documentElement.style.setProperty('--pulse', pulse.toFixed(3));
 
     this.renderer.draw({
       t,
