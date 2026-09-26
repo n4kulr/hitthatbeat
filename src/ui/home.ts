@@ -45,8 +45,8 @@ export class Home {
 
         <aside class="panel">
           <div class="lanes" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-          <h1 class="logo" aria-label="hit that beat">
-            <span class="l1">hit</span><span class="l2">that</span><span class="l3">beat</span>
+          <h1 class="logo" aria-label="laneline">
+            <span><i>l</i><i>a</i><i>n</i><i>e</i></span><span><i>l</i><i>i</i><i>n</i><i>e</i></span>
           </h1>
           <p class="tagline">Turn any song into a four-lane chart and play it.</p>
 

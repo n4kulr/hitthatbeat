@@ -1,4 +1,4 @@
-# hit that beat
+# laneline
 
 A RoBeats-style 4-lane rhythm game for the browser. Drop any audio file in and it auto-generates easy / normal / hard / expert charts from the audio. Everything runs in your browser; songs and scores are saved locally.
 

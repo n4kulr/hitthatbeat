@@ -247,14 +247,18 @@ kbd {
 .logo span {
   display: block;
 }
-.logo .l1 {
+.logo i {
+  font-style: normal;
   color: var(--pink);
 }
-.logo .l2 {
+.logo i:nth-child(2) {
   color: var(--lemon);
 }
-.logo .l3 {
+.logo i:nth-child(3) {
   color: var(--mint);
+}
+.logo i:nth-child(4) {
+  color: var(--peri);
 }
 .tagline {
   margin: -12px 0 0;
