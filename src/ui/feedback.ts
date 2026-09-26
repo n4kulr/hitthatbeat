@@ -13,11 +13,9 @@ export function toast(message: string, kind: 'info' | 'error' = 'info') {
 }
 
 const STAGES: Record<string, { label: string; from: number; to: number }> = {
-  setup: { label: 'warming up the robots', from: 0, to: 0.03 },
-  download: { label: 'grabbing the audio', from: 0.03, to: 0.35 },
-  decoding: { label: 'unpacking the waveform', from: 0.35, to: 0.42 },
-  listening: { label: 'listening really hard', from: 0.42, to: 0.82 },
-  'finding the groove': { label: 'finding the groove', from: 0.82, to: 0.9 },
+  decoding: { label: 'unpacking the waveform', from: 0, to: 0.08 },
+  listening: { label: 'listening really hard', from: 0.08, to: 0.8 },
+  'finding the groove': { label: 'finding the groove', from: 0.8, to: 0.9 },
   'picking the hits': { label: 'picking the hits', from: 0.9, to: 0.93 },
   'writing charts': { label: 'writing four charts', from: 0.93, to: 1 },
 };

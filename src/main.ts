@@ -1,12 +1,12 @@
 import './style.css';
 import type { Difficulty, SongRecord } from './types';
 import { db } from './lib/db';
-import { cleanYouTubeTitle, h, hash, titleFromFilename } from './lib/util';
+import { h, hash, titleFromFilename } from './lib/util';
 import { analyzeBuffer, decode } from './audio/engine';
 import { ANALYZER_VERSION } from './audio/analyze';
 import { renderDemoTrack } from './audio/demo';
 import { Game } from './game/game';
-import { Home, type YouTubeRef } from './ui/home';
+import { Home } from './ui/home';
 import { showProgress, toast, type ProgressHandle } from './ui/feedback';
 import { showResults } from './ui/results';
 
@@ -17,7 +17,6 @@ let busy = false;
 let inGame = false;
 
 const home = new Home({
-  importYouTube,
   importFile,
   importDemo,
   play,
@@ -87,54 +86,6 @@ async function saveNew(
   buffers.set(song.id, buffer);
   await refresh();
   return song;
-}
-
-async function importYouTube(ref: YouTubeRef) {
-  const existing = ref.id && songs.find((s) => s.ytId === ref.id);
-  if (existing) return home.openSong(existing);
-  const song = await withProgress(ref.title ?? 'youtube link', async (p) => {
-    const res = await fetch(`/api/yt/fetch?url=${encodeURIComponent(ref.url ?? ref.id!)}`);
-    if (!res.ok || !res.body) throw new Error("couldn't reach the local server — is `npm run dev` running?");
-    const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-    let buf = '';
-    let done: { meta: { id: string; title: string; artist: string; thumb: string }; audio: string } | null = null;
-    for (;;) {
-      const { value, done: end } = await reader.read();
-      if (value) buf += value;
-      const lines = buf.split('\n');
-      buf = lines.pop() ?? '';
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        const msg = JSON.parse(line);
-        if (msg.type === 'progress') p.update(msg.stage, msg.pct / 100);
-        else if (msg.type === 'error') throw new Error(`youtube said no: ${msg.message}`);
-        else if (msg.type === 'done') done = msg;
-      }
-      if (end) break;
-    }
-    if (!done) throw new Error('download ended unexpectedly');
-    const already = songs.find((s) => s.ytId === done!.meta.id);
-    if (already) return already;
-    p.update('download', 1);
-    const blob = await (await fetch(done.audio)).blob();
-    p.update('decoding', 0);
-    const buffer = await decode(await blob.arrayBuffer());
-    const clean = cleanYouTubeTitle(done.meta.title, done.meta.artist);
-    return saveNew(
-      {
-        id: `yt:${done.meta.id}`,
-        title: ref.title || clean.title,
-        artist: ref.artist ?? clean.artist,
-        source: 'youtube',
-        ytId: done.meta.id,
-        thumb: done.meta.thumb,
-        audio: blob,
-      },
-      buffer,
-      p,
-    );
-  });
-  if (song) home.openSong(song);
 }
 
 const AUDIO_EXT = /\.(mp3|wav|flac|ogg|oga|m4a|aac|opus|webm|mp4)$/i;

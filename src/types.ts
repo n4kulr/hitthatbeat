@@ -43,9 +43,7 @@ export interface SongRecord {
   id: string;
   title: string;
   artist: string;
-  source: 'youtube' | 'file' | 'demo';
-  ytId?: string;
-  thumb?: string;
+  source: 'file' | 'demo';
   addedAt: number;
   lastPlayed?: number;
   audio: Blob;

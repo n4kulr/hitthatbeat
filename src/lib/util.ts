@@ -57,18 +57,3 @@ export function titleFromFilename(name: string): { title: string; artist: string
   const m = base.match(/^(.+?)\s+-\s+(.+)$/);
   return m ? { artist: m[1].trim(), title: m[2].trim() } : { title: base || 'untitled', artist: '' };
 }
-
-/** Strip the usual YouTube title noise: "(Official Video)", "[4K]", etc. */
-export function cleanYouTubeTitle(title: string, channel: string): { title: string; artist: string } {
-  let t = title
-    .replace(/\s*[([](official|lyric|lyrics|audio|video|music video|visualizer|hd|4k|mv|m\/v)[^)\]]*[)\]]/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-  let artist = channel.replace(/\s*-\s*Topic$/i, '').replace(/VEVO$/i, '').trim();
-  const m = t.match(/^(.+?)\s+[-–—]\s+(.+)$/);
-  if (m) {
-    artist = m[1].trim();
-    t = m[2].trim();
-  }
-  return { title: t || title, artist };
-}

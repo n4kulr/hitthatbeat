@@ -1,7 +1,7 @@
 import type { Analysis, ChartInfo, Difficulty, Lane, Note } from '../types';
 
 /** Bump when chart generation changes so stored songs get re-analyzed. */
-export const ANALYZER_VERSION = 1;
+export const ANALYZER_VERSION = 2;
 
 export type ProgressFn = (stage: string, pct: number) => void;
 
@@ -241,6 +241,90 @@ function trackBeats(env: Float32Array, fps: number, bpm: number): number[] {
   return beats.reverse();
 }
 
+/**
+ * Frames are ~12ms wide, so a spectral-flux peak only says "somewhere in here".
+ * Look at the raw samples in 2ms blocks and return where the energy actually jumps.
+ */
+function refineOnset(x: Float32Array, sr: number, t: number): number {
+  const B = Math.max(8, Math.round(sr * 0.002));
+  const a = Math.max(0, Math.round((t - 0.045) * sr));
+  const blocks = Math.floor((Math.min(x.length, Math.round((t + 0.03) * sr)) - a) / B);
+  if (blocks < 4) return t;
+  const e = new Float32Array(blocks);
+  for (let b = 0; b < blocks; b++) {
+    let sum = 0;
+    for (let i = 0; i < B; i++) {
+      const v = x[a + b * B + i];
+      sum += v * v;
+    }
+    e[b] = Math.log(sum / B + 1e-9);
+  }
+  let best = -Infinity;
+  let arg = -1;
+  for (let b = 2; b < blocks; b++) {
+    const d = e[b] - e[b - 2];
+    if (d > best) {
+      best = d;
+      arg = b;
+    }
+  }
+  // ponytail: fixed jump threshold; soft attacks (pads, swells) fall back to the frame time
+  return best > 0.7 ? (a + (arg - 1) * B) / sr : t;
+}
+
+function lineFit(xs: number[], ys: number[]): { a: number; p: number } {
+  const n = xs.length;
+  const mx = mean(xs);
+  const my = mean(ys);
+  let num = 0;
+  let den = 0;
+  for (let i = 0; i < n; i++) {
+    num += (xs[i] - mx) * (ys[i] - my);
+    den += (xs[i] - mx) ** 2;
+  }
+  const p = den > 0 ? num / den : 0;
+  return { a: my - p * mx, p };
+}
+
+/**
+ * Tracked beats jitter by a frame or two. Pull each onto the nearest real attack,
+ * then fit a straight tempo line (steady songs) or a sliding local line (live/tempo drift),
+ * so the grid every note snaps to is evenly spaced.
+ */
+function fitBeats(beats: number[], attacks: number[], period: number): number[] {
+  if (beats.length < 8) return beats;
+  const pulled = beats.map((b) => {
+    const i = lowerBound(attacks, b);
+    let best = b;
+    let d = period / 6;
+    for (const o of [attacks[i - 1], attacks[i]]) {
+      if (o !== undefined && Math.abs(o - b) < d) {
+        d = Math.abs(o - b);
+        best = o;
+      }
+    }
+    return best;
+  });
+  // beat numbers: the tracker can skip or double a beat
+  const k = [0];
+  for (let i = 1; i < pulled.length; i++) k.push(k[i - 1] + Math.max(1, Math.round((pulled[i] - pulled[i - 1]) / period)));
+  const last = k[k.length - 1];
+
+  const global = lineFit(k, pulled);
+  const resid = pulled.map((t, i) => Math.abs(t - (global.a + global.p * k[i])));
+  if (quantile(resid, 0.9) < 0.02) return Array.from({ length: last + 1 }, (_, j) => global.a + global.p * j);
+
+  const out: number[] = [];
+  for (let j = 0, i = 0; j <= last; j++) {
+    while (i < k.length - 1 && k[i + 1] <= j) i++;
+    const lo = Math.max(0, i - 4);
+    const hi = Math.min(k.length, i + 5);
+    const f = lineFit(k.slice(lo, hi), pulled.slice(lo, hi));
+    out.push(f.a + f.p * j);
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------- onsets
 
 interface Onset {
@@ -350,7 +434,7 @@ const CONFIGS: Record<Difficulty, DiffConfig> = {
     jackGap: 0.24,
   },
   expert: {
-    levels: [0, 1, 2, 3],
+    levels: [0, 1, 2],
     minGap: 0.1,
     minGapBeats: 0.24,
     keepFrac: 1,
@@ -579,29 +663,13 @@ export function analyze(samples: Float32Array, sr: number, progress: ProgressFn)
   progress('finding the groove', 0.4);
   const beatFrames = trackBeats(env, fps, bpmGuess);
   const frameTime = (f: number) => (f * HOP + N / 2) / sr;
-  const beats = beatFrames.map(frameTime);
-  const intervals = beats.slice(1).map((b, i) => b - beats[i]);
-  const bpm = intervals.length ? 60 / median(intervals) : bpmGuess;
 
-  // downbeat phase: which of every 4 beats carries the most kick energy
-  const lowMean = mean(feats.flux[0]) || 1;
-  const phase = [0, 0, 0, 0];
-  beatFrames.forEach((f, i) => {
-    let m = 0;
-    for (let k = Math.max(0, f - 2); k <= Math.min(frames - 1, f + 2); k++) m = Math.max(m, feats.flux[0][k] / lowMean);
-    phase[i % 4] += m;
-  });
-  const downbeat = phase.indexOf(Math.max(...phase));
-  progress('finding the groove', 0.8);
-
-  // onset peak picking
-  progress('picking the hits', 0);
+  // onset peak picking, each peak moved to its real attack in the samples
   const w = 3;
   const localMean = movingMean(env, Math.round(0.3 * fps), Math.round(0.3 * fps));
   const contextMean = movingMean(env, Math.round(3 * fps), Math.round(3 * fps));
   const bandMeans = feats.flux.map((b) => mean(b) || 1);
-  const grid = buildGrid(beats, duration);
-  const raw: Onset[] = [];
+  const peaks: { t: number; frame: number }[] = [];
   for (let i = 1; i < frames - 1; i++) {
     const v = env[i];
     if (v < localMean[i] * 1.25 + 0.2) continue;
@@ -612,20 +680,45 @@ export function analyze(samples: Float32Array, sr: number, progress: ProgressFn)
         break;
       }
     }
-    if (!isMax) continue;
-    const t = frameTime(i);
+    if (isMax) peaks.push({ t: refineOnset(samples, sr, frameTime(i)), frame: i });
+  }
+
+  const beats = fitBeats(
+    beatFrames.map(frameTime),
+    peaks.map((p) => p.t),
+    60 / bpmGuess,
+  );
+  const intervals = beats.slice(1).map((b, i) => b - beats[i]);
+  const bpm = intervals.length ? 60 / median(intervals) : bpmGuess;
+
+  // downbeat phase: which of every 4 beats carries the most kick energy
+  const lowMean = mean(feats.flux[0]) || 1;
+  const phase = [0, 0, 0, 0];
+  beats.forEach((t, i) => {
+    const f = Math.round(t * fps);
+    let m = 0;
+    for (let k = Math.max(0, f - 2); k <= Math.min(frames - 1, f + 2); k++) m = Math.max(m, feats.flux[0][k] / lowMean);
+    phase[i % 4] += m;
+  });
+  const downbeat = phase.indexOf(Math.max(...phase));
+  progress('finding the groove', 0.8);
+
+  // every note sits on the 16th grid; anything between grid lines is noise, not rhythm
+  progress('picking the hits', 0);
+  const grid = buildGrid(beats, duration);
+  const raw: Onset[] = [];
+  for (const { t, frame: i } of peaks) {
     const g = nearestGrid(grid, t);
-    const tol = Math.min(0.05, g.beatDur / 8);
-    const snapped = Math.abs(g.t - t) <= tol;
+    if (Math.abs(g.t - t) > g.beatDur / 8 + 0.01) continue;
     const cf = Math.min(frames - 1, i + 1);
     raw.push({
-      t: snapped ? g.t : t,
+      t: g.t,
       frame: i,
-      strength: v,
-      local: v / (contextMean[i] + 0.05),
+      strength: env[i],
+      local: env[i] / (contextMean[i] + 0.05),
       centroid: feats.centroid[cf] || feats.centroid[i],
       bands: feats.flux.map((b, bi) => b[i] / bandMeans[bi]),
-      level: snapped ? g.level : 3,
+      level: g.level,
       score: 0,
     });
   }
