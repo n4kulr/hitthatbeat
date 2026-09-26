@@ -8,9 +8,10 @@
   --peri: #7b8cff;
   --orange: #ff8a3d;
   --lilac: #c77dff;
-  --display: 'Archivo', system-ui, sans-serif;
-  /* one family: numbers just switch to tabular figures */
-  --mono: 'Archivo', system-ui, sans-serif;
+  --display: 'Rubik', system-ui, sans-serif;
+  --mono: 'Rubik', system-ui, sans-serif;
+  /* arcade signage face for the logo and big game moments */
+  --arcade: 'Bungee', 'Rubik', sans-serif;
   --pop: cubic-bezier(0.2, 1.5, 0.4, 1);
 }
 
@@ -236,8 +237,7 @@ kbd {
 .logo {
   margin: 0;
   font-family: var(--display);
-  font-weight: 900;
-  font-stretch: 125%;
+  font-weight: 400;
   font-size: 72px;
   line-height: 0.9;
   letter-spacing: -0.02em;
@@ -1773,4 +1773,21 @@ body.dragging .drop-veil {
     animation-duration: 0.001s !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* ------------------------------------------------------------ arcade type */
+
+.logo,
+.grade-letter,
+.game-count,
+.pause-title,
+.drop-veil-text,
+.settings-modal h2,
+.diff-name,
+.btn-play,
+.hud-score,
+.res-score {
+  font-family: var(--arcade);
+  font-weight: 400;
+  letter-spacing: 0.01em;
 }

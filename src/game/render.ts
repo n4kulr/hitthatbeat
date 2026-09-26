@@ -1,4 +1,5 @@
 import type { Lane } from '../types';
+import { Crowd } from './crowd';
 
 export const LANE_COLORS = ['#ff4f8b', '#ffd84d', '#3fe0b5', '#7b8cff'];
 export const INK = '#1b1a1f';
@@ -89,6 +90,7 @@ export class Renderer {
   private milestone: { text: string; born: number } | null = null;
   private edgeFlash = 0;
   private lastFrame = performance.now();
+  private crowd = new Crowd();
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -167,6 +169,7 @@ export class Renderer {
   celebrate(combo: number) {
     this.milestone = { text: `${combo} COMBO!`, born: performance.now() };
     this.edgeFlash = 1;
+    this.crowd.cheerNow();
   }
 
   private spawnParticle(x: number, y: number, color: string, power: number) {
@@ -218,6 +221,17 @@ export class Renderer {
     this.shake *= 0.86;
 
     this.drawBackground(st, beatPulse, hype, dt);
+    this.crowd.draw(g, {
+      W,
+      H,
+      cx: this.cx,
+      trackHalf: Math.abs(this.proj(2.3, 1.1).x - this.cx),
+      t: st.t,
+      beats: st.beats,
+      combo: st.combo,
+      effects: st.effects,
+      dt,
+    });
     this.drawTrack(st, beatPulse, hype, now);
     this.drawReceptors(st, dt);
     this.drawNotes(st, now);
@@ -421,7 +435,7 @@ export class Renderer {
       g.stroke();
 
       g.fillStyle = pressed ? INK : hexA(CREAM, 0.85);
-      g.font = `700 ${Math.round(r * 0.62)}px Archivo, sans-serif`;
+      g.font = `700 ${Math.round(r * 0.62)}px Rubik, sans-serif`;
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       g.fillText(st.keyLabels[l], x, y + 1);
@@ -593,7 +607,7 @@ export class Renderer {
     g.translate(x, y);
     g.rotate(rot);
     g.globalAlpha = alpha;
-    g.font = `900 ${Math.round(size)}px Archivo, sans-serif`;
+    g.font = `400 ${Math.round(size)}px Bungee, sans-serif`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.lineJoin = 'round';
@@ -613,7 +627,7 @@ export class Renderer {
     const size = this.spacing * (0.75 + bump * 0.12);
     const color = hype === 2 ? `hsl(${(now / 6) % 360},100%,72%)` : hype === 1 ? LANE_COLORS[1] : CREAM;
     this.stickerText(String(st.combo), this.cx, y, size, color, 0, 0.95);
-    this.g.font = `700 ${Math.round(this.spacing * 0.16)}px Archivo, sans-serif`;
+    this.g.font = `700 ${Math.round(this.spacing * 0.16)}px Rubik, sans-serif`;
     this.g.fillStyle = hexA(CREAM, 0.7);
     this.g.textAlign = 'center';
     this.g.fillText('COMBO', this.cx, y + size * 0.62);
@@ -642,7 +656,7 @@ export class Renderer {
     if (showTiming && j.kind !== 'perfect' && j.kind !== 'miss') {
       const g = this.g;
       g.globalAlpha = alpha;
-      g.font = `700 ${Math.round(this.spacing * 0.14)}px Archivo, sans-serif`;
+      g.font = `700 ${Math.round(this.spacing * 0.14)}px Rubik, sans-serif`;
       g.fillStyle = j.err < 0 ? '#8fd3ff' : '#ffb27a';
       g.textAlign = 'center';
       g.fillText(j.err < 0 ? 'EARLY' : 'LATE', this.cx, y + this.spacing * 0.33);
