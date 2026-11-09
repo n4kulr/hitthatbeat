@@ -92,10 +92,7 @@ export class Renderer {
   private lastFrame = performance.now();
   private crowd = new Crowd();
 
-  constructor(
-    private canvas: HTMLCanvasElement,
-    private opts: { centerX?: number; hud?: boolean } = {},
-  ) {
+  constructor(private canvas: HTMLCanvasElement) {
     this.g = canvas.getContext('2d')!;
     for (let i = 0; i < 160; i++) this.stars.push(this.newStar(Math.random()));
     this.resize();
@@ -109,7 +106,7 @@ export class Renderer {
     this.canvas.width = Math.round(rect.width * dpr);
     this.canvas.height = Math.round(rect.height * dpr);
     this.g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.cx = this.W * (this.W < 1000 ? 0.5 : (this.opts.centerX ?? 0.5));
+    this.cx = this.W * 0.5;
     this.vpY = this.H * 0.08;
     this.baseY = this.H * 0.83;
     this.spacing = Math.min(this.W * 0.14, this.H * 0.17, 150);
@@ -236,10 +233,8 @@ export class Renderer {
     this.drawReceptors(st, dt);
     this.drawNotes(st, now);
     this.drawEffects(now, dt, st.effects);
-    if (this.opts.hud !== false) {
-      this.drawCombo(st, now, hype);
-      this.drawJudgment(now, st.showTiming);
-    }
+    this.drawCombo(st, now, hype);
+    this.drawJudgment(now, st.showTiming);
     if (st.showTiming) this.drawErrorMeter(now);
     g.restore();
 

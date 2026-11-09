@@ -26,6 +26,7 @@ const home = new Home({
     toast(`removed “${song.title}”`);
     refresh();
   },
+  getBuffer,
   reanalyze: async (song) => {
     const updated = await withProgress(song.title, (p) => reanalyze(song, p));
     if (updated) home.openSong(updated);
