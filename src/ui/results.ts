@@ -38,17 +38,21 @@ export function showResults(mount: HTMLElement, song: SongRecord, r: GameResult,
   const el = h(`
     <div class="results">
       <div class="res-grade-col">
-        <div class="grade-burst grade-${r.grade}">
-          <svg viewBox="0 0 200 200" class="burst"><path d="${burstPath()}"/></svg>
+        <div class="grade-burst grade-${r.grade}" style="--acc:${r.accuracy}">
+          <svg viewBox="0 0 200 200" class="burst" aria-hidden="true">
+            <circle cx="100" cy="100" r="88" class="burst-track"/>
+            <circle cx="100" cy="100" r="88" class="burst-fill" pathLength="1"/>
+          </svg>
           <span class="grade-letter">${r.grade}</span>
         </div>
         <div class="grade-line">${escapeHtml(line)}</div>
         <div class="badges">${badges}</div>
       </div>
       <div class="card res-card">
-        <div class="card-label">results · <span class="diff-chip diff-${r.difficulty}">${r.difficulty}</span></div>
+        <div class="card-label">Results <span class="diff-chip diff-${r.difficulty}">${r.difficulty}</span></div>
         <h2 class="res-title">${escapeHtml(song.title)}</h2>
         <div class="res-artist">${escapeHtml(song.artist)}</div>
+        <div class="res-score-label">score</div>
         <div class="res-score">0</div>
         <div class="res-stats">
           <div><small>accuracy</small><b>${(r.accuracy * 100).toFixed(2)}%</b></div>
@@ -59,16 +63,16 @@ export function showResults(mount: HTMLElement, song: SongRecord, r: GameResult,
           ${row('perfect', 'perfect')}${row('great', 'great')}${row('okay', 'okay')}${row('miss', 'miss')}
         </div>
         <canvas class="res-hist" width="560" height="90"></canvas>
-        <div class="res-hist-legend"><span>early</span><span>late</span></div>
+        <div class="res-hist-legend"><span>early</span><span>timing</span><span>late</span></div>
         ${
           canFix
             ? `<div class="offset-tip">you were hitting <b>${Math.abs(mean)}ms ${mean > 0 ? 'late' : 'early'}</b>, so timing is now shifted to match you.
-               <button class="btn btn-small" data-act="undo">undo</button></div>`
+               <button class="btn btn-small" data-act="undo">Undo</button></div>`
             : ''
         }
         <div class="res-actions">
-          <button class="btn btn-pink" data-act="retry">retry <kbd>R</kbd></button>
-          <button class="btn" data-act="back">back to crate <kbd>esc</kbd></button>
+          <button class="btn btn-pink" data-act="retry">Retry <kbd>R</kbd></button>
+          <button class="btn" data-act="back">Library <kbd>esc</kbd></button>
         </div>
       </div>
     </div>`);
@@ -125,7 +129,9 @@ function drawHistogram(canvas: HTMLCanvasElement, errors: number[]) {
   const zone = (ms: number, color: string) => {
     const w = (ms / range) * (W / 2);
     g.fillStyle = color;
-    g.fillRect(W / 2 - w, H - 6, w * 2, 6);
+    g.globalAlpha = 0.35;
+    g.fillRect(W / 2 - w, H - 4, w * 2, 4);
+    g.globalAlpha = 1;
   };
   zone(WINDOWS.okay * 1000, '#8fa0ff');
   zone(WINDOWS.great * 1000, '#3fe0b5');
@@ -133,26 +139,15 @@ function drawHistogram(canvas: HTMLCanvasElement, errors: number[]) {
   const bw = W / bins;
   counts.forEach((c, i) => {
     const bh = (c / max) * (H - 14);
+    if (!bh) return;
     const ms = Math.abs((i / (bins - 1)) * 2 * range - range);
     g.fillStyle = ms <= WINDOWS.perfect * 1000 ? '#ffd84d' : ms <= WINDOWS.great * 1000 ? '#3fe0b5' : '#8fa0ff';
-    g.strokeStyle = '#1b1a1f';
-    g.lineWidth = 2;
-    g.fillRect(i * bw + 1, H - 8 - bh, bw - 2, bh);
-    if (bh > 2) g.strokeRect(i * bw + 1, H - 8 - bh, bw - 2, bh);
+    g.beginPath();
+    g.roundRect(i * bw + 2, H - 10 - bh, bw - 4, bh, 3);
+    g.fill();
   });
-  g.fillStyle = '#1b1a1f';
-  g.fillRect(W / 2 - 1, 0, 2, H);
-}
-
-function burstPath() {
-  const pts: string[] = [];
-  const spikes = 14;
-  for (let i = 0; i < spikes * 2; i++) {
-    const a = (i / (spikes * 2)) * Math.PI * 2;
-    const r = i % 2 ? 72 : 96;
-    pts.push(`${(100 + Math.cos(a) * r).toFixed(1)},${(100 + Math.sin(a) * r).toFixed(1)}`);
-  }
-  return `M${pts.join('L')}Z`;
+  g.fillStyle = 'rgba(244,241,234,0.5)';
+  g.fillRect(W / 2 - 1, 0, 2, H - 6);
 }
 
 function confetti(host: HTMLElement) {

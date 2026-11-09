@@ -2,8 +2,8 @@ import type { Lane } from '../types';
 import { Crowd } from './crowd';
 
 export const LANE_COLORS = ['#ff4f8b', '#ffd84d', '#3fe0b5', '#7b8cff'];
-export const INK = '#1b1a1f';
-export const CREAM = '#f7f1e3';
+export const INK = '#0b0a10';
+export const CREAM = '#f4f1ea';
 
 export type Judgment = 'perfect' | 'great' | 'okay' | 'miss';
 
@@ -263,17 +263,17 @@ export class Renderer {
     const g = this.g;
     const { W, H, cx, vpY } = this;
     const bg = g.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#4a3a7a');
-    bg.addColorStop(0.55, '#33285e');
-    bg.addColorStop(1, '#221a42');
+    bg.addColorStop(0, '#1d1533');
+    bg.addColorStop(0.55, '#120e20');
+    bg.addColorStop(1, '#0b0a10');
     g.fillStyle = bg;
     g.fillRect(-20, -20, W + 40, H + 40);
 
     // glowing "sun" at the vanishing point
     const sunR = this.spacing * (1.6 + st.bass * 1.2 + pulse * 0.4 + hype * 0.3);
     const sun = g.createRadialGradient(cx, vpY + H * 0.12, 0, cx, vpY + H * 0.12, sunR * 2.2);
-    const hue = hype === 2 ? (performance.now() / 20) % 360 : 285;
-    sun.addColorStop(0, `hsla(${hue}, 100%, 70%, ${0.35 + st.bass * 0.3})`);
+    const hue = hype === 2 ? (performance.now() / 20) % 360 : 300;
+    sun.addColorStop(0, `hsla(${hue}, 90%, 62%, ${0.28 + st.bass * 0.3})`);
     sun.addColorStop(0.4, `hsla(${hue + 40}, 100%, 60%, 0.12)`);
     sun.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = sun;
@@ -437,7 +437,7 @@ export class Renderer {
       g.stroke();
 
       g.fillStyle = pressed ? INK : hexA(CREAM, 0.85);
-      g.font = `700 ${Math.round(r * 0.62)}px Rubik, sans-serif`;
+      g.font = `600 ${Math.round(r * 0.5)}px 'Geist Mono', monospace`;
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       g.fillText(st.keyLabels[l], x, y + 1);
@@ -625,7 +625,7 @@ export class Renderer {
     g.translate(x, y);
     g.rotate(rot);
     g.globalAlpha = alpha;
-    g.font = `400 ${Math.round(size)}px Bungee, sans-serif`;
+    g.font = `900 ${Math.round(size * 0.86)}px Unbounded, sans-serif`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.lineJoin = 'round';
@@ -647,7 +647,7 @@ export class Renderer {
     const size = this.spacing * (0.75 + bump * 0.12);
     const color = hype === 2 ? `hsl(${(now / 6) % 360},100%,72%)` : hype === 1 ? LANE_COLORS[1] : CREAM;
     this.stickerText(String(st.combo), pos.x, y, size, color, 0, 0.95);
-    this.g.font = `700 ${Math.round(this.spacing * 0.16)}px Rubik, sans-serif`;
+    this.g.font = `500 ${Math.round(this.spacing * 0.13)}px 'Geist Mono', monospace`;
     this.g.fillStyle = hexA(CREAM, 0.7);
     this.g.textAlign = 'center';
     this.g.fillText('COMBO', pos.x, y + size * 0.62);
@@ -677,7 +677,7 @@ export class Renderer {
     if (showTiming && j.kind !== 'perfect' && j.kind !== 'miss') {
       const g = this.g;
       g.globalAlpha = alpha;
-      g.font = `700 ${Math.round(this.spacing * 0.14)}px Rubik, sans-serif`;
+      g.font = `600 ${Math.round(this.spacing * 0.13)}px 'Geist Mono', monospace`;
       g.fillStyle = j.err < 0 ? '#8fd3ff' : '#ffb27a';
       g.textAlign = 'center';
       g.fillText(j.err < 0 ? 'EARLY' : 'LATE', pos.x, y + this.spacing * 0.33);

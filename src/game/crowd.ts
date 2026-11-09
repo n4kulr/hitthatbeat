@@ -1,6 +1,6 @@
 const LANE = ['#ff4f8b', '#ffd84d', '#3fe0b5', '#7b8cff'];
 /** Silhouette fill per row; back rows are lighter, as if seen through stage haze. */
-const ROW_FILL = ['#171230', '#211a40', '#2c2452'];
+const ROW_FILL = ['#0d0a18', '#141024', '#1b1631'];
 
 type Hair = 'short' | 'long' | 'afro' | 'bun' | 'cap' | 'beanie' | 'phones';
 const HAIRS: Hair[] = ['short', 'short', 'long', 'long', 'afro', 'bun', 'cap', 'beanie', 'phones'];

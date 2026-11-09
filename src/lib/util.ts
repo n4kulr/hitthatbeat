@@ -24,27 +24,23 @@ export function h<T extends HTMLElement = HTMLElement>(html: string): T {
 
 const ART_COLORS = ['#ff4f8b', '#ffd84d', '#3fe0b5', '#7b8cff', '#ff8a3d', '#c77dff'];
 
-/** Deterministic sticker-ish cover art for songs without a thumbnail. */
+/** Deterministic cover art: a record label whose grooves are the song's own loudness curve. */
 export function coverArt(seed: string, waveform: number[] = []): string {
   const r = hash(seed);
-  const pick = (n: number) => ART_COLORS[(r >> n) % ART_COLORS.length];
-  const bg = pick(0);
-  let fg = pick(5);
-  if (fg === bg) fg = ART_COLORS[(ART_COLORS.indexOf(bg) + 2) % ART_COLORS.length];
-  const shape = (r >> 9) % 3;
-  const bars = waveform.length
-    ? Array.from({ length: 24 }, (_, i) => {
-        const v = waveform[Math.floor((i / 24) * waveform.length)] ?? 0.3;
-        const hgt = 8 + v * 52;
-        return `<rect x="${6 + i * 3.7}" y="${92 - hgt}" width="2.4" height="${hgt}" rx="1.2" fill="#1b1a1f" opacity=".85"/>`;
-      }).join('')
-    : '';
-  const shapes = [
-    `<circle cx="50" cy="40" r="26" fill="${fg}" stroke="#1b1a1f" stroke-width="3"/>`,
-    `<rect x="26" y="16" width="48" height="48" rx="6" transform="rotate(12 50 40)" fill="${fg}" stroke="#1b1a1f" stroke-width="3"/>`,
-    `<path d="M50 12 L58 32 L80 34 L63 48 L68 70 L50 58 L32 70 L37 48 L20 34 L42 32 Z" fill="${fg}" stroke="#1b1a1f" stroke-width="3" stroke-linejoin="round"/>`,
-  ];
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="${bg}"/>${shapes[shape]}${bars}</svg>`;
+  const a = ART_COLORS[r % ART_COLORS.length];
+  let b = ART_COLORS[(r >> 4) % ART_COLORS.length];
+  if (b === a) b = ART_COLORS[(ART_COLORS.indexOf(a) + 2) % ART_COLORS.length];
+  const angle = (r >> 8) % 360;
+  const N = 56;
+  const bars = Array.from({ length: N }, (_, i) => {
+    const v = waveform.length ? (waveform[Math.floor((i / N) * waveform.length)] ?? 0.3) : 0.5;
+    const th = (i / N) * Math.PI * 2 + (angle * Math.PI) / 180;
+    const r0 = 17;
+    const r1 = r0 + 4 + v * 25;
+    const p = (rad: number) => `${(50 + Math.cos(th) * rad).toFixed(1)} ${(50 + Math.sin(th) * rad).toFixed(1)}`;
+    return `M${p(r0)}L${p(r1)}`;
+  }).join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" gradientTransform="rotate(${angle % 90 + 20} .5 .5)"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="100" height="100" fill="url(#g)"/><path d="${bars}" stroke="#0b0a10" stroke-width="2.4" stroke-linecap="round" opacity=".88"/><circle cx="50" cy="50" r="12" fill="#0b0a10"/><circle cx="50" cy="50" r="2.6" fill="${a}"/></svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 

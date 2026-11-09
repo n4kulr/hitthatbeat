@@ -21,7 +21,7 @@ const STAGES: Record<string, { label: string; from: number; to: number }> = {
 };
 
 const TIPS = [
-  'notes with a ring in the middle are holds — keep the key down',
+  'notes with a ring in the middle are holds. keep the key down',
   'esc pauses. the song waits for you',
   'hits feel late? the results screen can fix your offset in one click',
   'crank scroll speed in settings if notes feel crowded',
@@ -41,11 +41,11 @@ export function showProgress(title: string): ProgressHandle {
     <div class="modal-veil progress-veil">
       <div class="progress-card">
         <div class="eq">${'<span></span>'.repeat(7)}</div>
-        <div class="card-label">analyzing</div>
+        <div class="card-label">Charting</div>
         <div class="progress-title">${escapeHtml(title)}</div>
         <div class="progress-stage">getting ready…</div>
         <div class="progress-track"><div class="progress-fill"></div></div>
-        <div class="progress-tip">tip: ${escapeHtml(TIPS[Math.floor(Math.random() * TIPS.length)])}</div>
+        <div class="progress-tip"><b>Tip</b> ${escapeHtml(TIPS[Math.floor(Math.random() * TIPS.length)])}</div>
       </div>
     </div>`);
   document.body.appendChild(el);

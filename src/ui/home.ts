@@ -15,8 +15,10 @@ export interface HomeActions {
   reanalyze(song: SongRecord): void;
 }
 
-const ICON_FILE = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+const ICON_FILE = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>`;
 const ICON_GEAR = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>`;
+
+const CODE_LETTERS = 'ABCDEFGHJKLMNPRSTUVWXYZ';
 
 export function coverFor(song: SongRecord) {
   return coverArt(song.id + song.title, song.analysis.waveform);
@@ -33,6 +35,7 @@ function bestGrade(song: SongRecord) {
 export class Home {
   el: HTMLElement;
   private songs: SongRecord[] = [];
+  private codes = new Map<string, string>();
   private crateBody: HTMLElement;
   private modal: HTMLElement | null = null;
   private attract: Attract;
@@ -41,35 +44,43 @@ export class Home {
     this.el = h(`
       <div class="home">
         <canvas class="attract"></canvas>
+        <div class="stage-shade" aria-hidden="true"></div>
 
         <aside class="panel">
-          <h1 class="sr-only">juke</h1>
-          <div class="lanes" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-          <p class="tagline">Turn any song into a four-lane chart and play it.</p>
+          <header class="brand">
+            <h1 class="wordmark" aria-label="juke">
+              <span class="wordmark-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>juke
+            </h1>
+            <button class="icon-btn" data-act="settings" aria-label="settings">${ICON_GEAR}</button>
+          </header>
+
+          <section class="hero">
+            <h2 class="headline">Any song.<br /><span>Four lanes.</span></h2>
+            <p class="lede">Drop in an audio file. juke finds the beat and writes four charts, easy to expert, without the song ever leaving your browser.</p>
+          </section>
 
           <label class="drop">
             <input type="file" accept="audio/*,.mp3,.wav,.flac,.ogg,.m4a,.opus" hidden />
             <span class="drop-icon">${ICON_FILE}</span>
-            <span class="drop-text"><b>Drop an audio file</b><small>or click to browse · mp3, wav, flac, ogg, m4a</small></span>
+            <span class="drop-text"><b>Drop a track</b><small>mp3 · wav · flac · ogg · m4a</small></span>
+            <span class="drop-cta">Browse</span>
           </label>
-          <button class="chip" data-act="demo">No file handy? Try the demo track</button>
 
           <section class="list">
             <div class="list-head">
               <h2 class="list-title">Library <span class="count">0</span></h2>
-              <input class="filter" placeholder="filter…" spellcheck="false" />
+              <input class="filter" placeholder="Search" spellcheck="false" aria-label="search library" />
             </div>
             <div class="list-body crate-body"></div>
           </section>
 
           <footer class="panel-foot">
             <span class="foot-keys"></span>
-            <span>audio never leaves your device</span>
+            <span class="foot-note"><kbd>esc</kbd> pause</span>
           </footer>
         </aside>
 
-        <button class="icon-btn settings-btn" data-act="settings" aria-label="settings">${ICON_GEAR}</button>
-        <div class="demo-tag">autoplay preview</div>
+        <div class="stage-tag"><span class="live-dot"></span>autoplay</div>
       </div>`);
 
     this.crateBody = this.el.querySelector('.crate-body')!;
@@ -114,6 +125,10 @@ export class Home {
   }
 
   setSongs(songs: SongRecord[]) {
+    // jukebox selection codes follow the order songs were added, so they never shuffle
+    this.codes = new Map(
+      [...songs].sort((a, b) => a.addedAt - b.addedAt).map((s, i) => [s.id, `${CODE_LETTERS[Math.floor(i / 9) % CODE_LETTERS.length]}${(i % 9) + 1}`]),
+    );
     this.songs = [...songs].sort((a, b) => (b.lastPlayed ?? b.addedAt) - (a.lastPlayed ?? a.addedAt));
     this.el.querySelector('.list-title .count')!.textContent = String(songs.length);
     this.renderCrate();
@@ -125,13 +140,14 @@ export class Home {
     if (!this.songs.length) {
       this.crateBody.innerHTML = `
         <div class="empty">
-          <div class="empty-title">your library is empty</div>
-          <p>Drop a song above and it gets four charts, easy to expert. Or warm up with the <button class="inline-link" data-act="demo">demo track</button>.</p>
+          <div class="empty-slots" aria-hidden="true">${'<i></i>'.repeat(3)}</div>
+          <div class="empty-title">Nothing in the jukebox yet</div>
+          <p>Drop a song above, or warm up with the <button class="inline-link" data-act="demo">demo track</button>.</p>
         </div>`;
       return;
     }
     if (!list.length) {
-      this.crateBody.innerHTML = `<div class="empty"><p>no match for “${escapeHtml(q)}”</p></div>`;
+      this.crateBody.innerHTML = `<div class="empty"><p>No match for “${escapeHtml(q)}”</p></div>`;
       return;
     }
     this.crateBody.innerHTML = list
@@ -139,13 +155,16 @@ export class Home {
         const best = bestGrade(s);
         return `
           <button class="row" data-song="${escapeHtml(s.id)}" style="--c:${LANE_COLORS[hash(s.id) % 4]}">
+            <span class="row-code">${this.codes.get(s.id) ?? ''}</span>
             <span class="row-cover"><img src="${escapeHtml(coverFor(s))}" alt="" loading="lazy" /></span>
-            <span class="row-text"><b>${escapeHtml(s.title)}</b><small>${escapeHtml(s.artist || (s.source === 'file' ? 'local file' : '—'))}</small></span>
+            <span class="row-text"><b>${escapeHtml(s.title)}</b><small>${escapeHtml(s.artist || (s.source === 'file' ? 'Local file' : '—'))}</small></span>
             <span class="row-meta"><span>${Math.round(s.analysis.bpm)} bpm</span><span>${formatTime(s.analysis.duration)}</span></span>
-            ${best ? `<span class="row-grade grade-${best.b.grade}" title="best on ${best.d}">${best.b.grade}</span>` : ''}
+            <span class="row-grade ${best ? `grade-${best.b.grade}` : 'grade-none'}" title="${best ? `best on ${best.d}` : 'not played yet'}">${best ? best.b.grade : '–'}</span>
           </button>`;
       })
       .join('');
+    if (!this.songs.some((s) => s.source === 'demo'))
+      this.crateBody.insertAdjacentHTML('beforeend', '<button class="inline-link list-demo" data-act="demo">+ add the demo track</button>');
   }
 
   // ------------------------------------------------------------- song modal
@@ -156,31 +175,43 @@ export class Home {
     const a = song.analysis;
     const cover = escapeHtml(coverFor(song));
     const el = h(`
-      <div class="modal-veil">
-        <div class="modal song-modal">
-          <div class="sm-bg" style="background-image:url('${cover}')"></div>
-          <button class="close" aria-label="close">×</button>
-          <div class="sm-cover"><img src="${cover}" alt="" /></div>
+      <div class="modal-veil sheet-veil">
+        <div class="modal song-modal" role="dialog" aria-label="${escapeHtml(song.title)}">
+          <div class="sm-hero">
+            <div class="sm-bg" style="background-image:url('${cover}')"></div>
+            <div class="sm-cover"><img src="${cover}" alt="" /></div>
+            <button class="close" aria-label="close">×</button>
+          </div>
           <div class="sm-body">
-            <div class="sm-meta">${song.source === 'demo' ? 'built-in' : 'your file'} · ${Math.round(a.bpm)} bpm · ${formatTime(a.duration)}</div>
+            <div class="sm-code">${this.codes.get(song.id) ?? ''} · ${song.source === 'demo' ? 'built-in' : 'your file'}</div>
             <h2 class="sm-title">${escapeHtml(song.title)}</h2>
-            <div class="sm-artist">${escapeHtml(song.artist || '—')}</div>
-            <div class="diff-grid">
+            <div class="sm-artist">${escapeHtml(song.artist || 'Unknown artist')}</div>
+            <dl class="sm-stats">
+              <div><dt>tempo</dt><dd>${Math.round(a.bpm)}<small>bpm</small></dd></div>
+              <div><dt>length</dt><dd>${formatTime(a.duration)}</dd></div>
+              <div><dt>notes</dt><dd>${a.charts.expert.notes.length}<small>max</small></dd></div>
+            </dl>
+            <div class="diff-grid" role="radiogroup" aria-label="difficulty">
               ${DIFFICULTIES.map((d, i) => {
                 const c = a.charts[d];
                 const best = song.best[d];
+                const lit = Math.min(10, Math.max(1, Math.round(c.stars)));
                 return `
-                  <button class="diff-btn diff-${d}" data-d="${d}">
-                    <span class="diff-top"><span class="diff-name">${d}</span><kbd>${i + 1}</kbd></span>
-                    <span class="diff-stars">${'●'.repeat(Math.min(10, Math.max(1, Math.round(c.stars))))}<i>${c.stars}</i></span>
-                    <span class="diff-foot"><span>${c.notes.length} notes</span><span>${best ? `${best.grade} · ${(best.accuracy * 100).toFixed(1)}%${best.fullCombo ? ' fc' : ''}` : 'unplayed'}</span></span>
+                  <button class="diff-btn diff-${d}" data-d="${d}" role="radio">
+                    <kbd>${i + 1}</kbd>
+                    <span class="diff-name">${d}</span>
+                    <span class="diff-stars" title="${c.stars} stars">${'<i class="on"></i>'.repeat(lit)}${'<i></i>'.repeat(10 - lit)}<b>${c.stars.toFixed(1)}</b></span>
+                    <span class="diff-foot">${best ? `<span class="diff-best grade-${best.grade}">${best.grade}</span>${(best.accuracy * 100).toFixed(1)}%${best.fullCombo ? ' · FC' : ''}` : `${c.notes.length} notes`}</span>
                   </button>`;
               }).join('')}
             </div>
-            <button class="btn-play">play<kbd>↵</kbd></button>
+            <button class="btn-play"><span>Play</span><kbd>↵</kbd></button>
             <div class="sm-foot">
-              <button class="inline-link" data-act="reanalyze">re-analyze</button>
-              <button class="inline-link danger" data-act="delete">delete</button>
+              <span class="sm-keys">${settings.keys.map((k, i) => `<span class="ring" style="--c:${LANE_COLORS[i]}">${keyLabel(k)}</span>`).join('')}</span>
+              <span class="sm-links">
+                <button class="inline-link" data-act="reanalyze">Re-analyze</button>
+                <button class="inline-link danger" data-act="delete">Delete</button>
+              </span>
             </div>
           </div>
         </div>
@@ -191,7 +222,11 @@ export class Home {
 
     const select = (d: Difficulty) => {
       diff = d;
-      el.querySelectorAll('.diff-btn').forEach((b) => b.classList.toggle('selected', (b as HTMLElement).dataset.d === d));
+      el.querySelectorAll('.diff-btn').forEach((b) => {
+        const on = (b as HTMLElement).dataset.d === d;
+        b.classList.toggle('selected', on);
+        b.setAttribute('aria-checked', String(on));
+      });
     };
     select(diff);
 
@@ -210,7 +245,7 @@ export class Home {
       }
       if (t.closest('.btn-play')) play();
       const act = t.closest<HTMLElement>('[data-act]')?.dataset.act;
-      if (act === 'delete' && (await confirmDialog(`remove “${song.title}” from your crate?`, 'delete it', 'keep'))) {
+      if (act === 'delete' && (await confirmDialog(`Remove “${song.title}” from your library?`, 'Delete', 'Keep it'))) {
         this.closeSong();
         this.actions.remove(song);
       }

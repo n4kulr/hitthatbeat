@@ -9,19 +9,19 @@ export function openSettings(onClose?: () => void) {
     <div class="modal-veil">
       <div class="modal settings-modal">
         <button class="close" aria-label="close">×</button>
-        <div class="card-label">settings</div>
-        <h2>tune it up</h2>
+        <div class="card-label">Settings</div>
+        <h2>Tune it up</h2>
 
         <div class="setting">
-          <div class="setting-head"><span>scroll speed</span><b data-out="speed"></b></div>
+          <div class="setting-head"><span>Scroll speed</span><b data-out="speed"></b></div>
           <input type="range" min="1" max="10" step="0.5" data-key="speed" />
         </div>
 
         <div class="setting">
-          <div class="setting-head"><span>audio offset</span><b data-out="offsetMs"></b></div>
+          <div class="setting-head"><span>Audio offset</span><b data-out="offsetMs"></b></div>
           <input type="range" min="-250" max="250" step="1" data-key="offsetMs" />
-          <div class="setting-hint">raise it if you keep hitting late. or let the game figure it out:</div>
-          <button class="btn btn-small" data-act="calibrate">calibrate ♪</button>
+          <div class="setting-hint">Raise it if you keep hitting late, or let juke measure it:</div>
+          <button class="btn btn-small" data-act="calibrate">Calibrate</button>
           <div class="calib hidden">
             <div class="calib-dots">${'<span></span>'.repeat(4)}</div>
             <div class="calib-text">tap <kbd>space</kbd> on every click</div>
@@ -29,18 +29,18 @@ export function openSettings(onClose?: () => void) {
         </div>
 
         <div class="setting">
-          <div class="setting-head"><span>keys</span><small>click to rebind</small></div>
+          <div class="setting-head"><span>Keys</span><small>click to rebind</small></div>
           <div class="keys">${[0, 1, 2, 3].map((i) => `<button class="keycap lane-${i}" data-lane="${i}"></button>`).join('')}</div>
         </div>
 
         <div class="setting">
-          <div class="setting-head"><span>music</span><b data-out="musicVolume"></b></div>
+          <div class="setting-head"><span>Music volume</span><b data-out="musicVolume"></b></div>
           <input type="range" min="0" max="1" step="0.05" data-key="musicVolume" />
         </div>
 
         <div class="setting toggles">
-          <label class="toggle"><input type="checkbox" data-key="showTiming" /><span></span> early / late + timing bar</label>
-          <label class="toggle"><input type="checkbox" data-key="effects" /><span></span> particles + starfield</label>
+          <label class="toggle"><input type="checkbox" data-key="showTiming" /><span></span> Early / late + timing bar</label>
+          <label class="toggle"><input type="checkbox" data-key="effects" /><span></span> Particles, starfield and crowd</label>
         </div>
       </div>
     </div>`);
