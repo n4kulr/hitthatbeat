@@ -1,7 +1,7 @@
 import type { Analysis, ChartInfo, Difficulty, Lane, Note } from '../types';
 
 /** Bump when chart generation changes so stored songs get re-analyzed. */
-export const ANALYZER_VERSION = 3;
+export const ANALYZER_VERSION = 4;
 
 export type ProgressFn = (stage: string, pct: number) => void;
 
@@ -302,10 +302,17 @@ function trackBeats(env: Float32Array, fps: number, bpm: number): number[] {
  * Look at the raw samples in 2ms blocks and return where the energy actually jumps.
  */
 function refineOnset(x: Float32Array, sr: number, t: number): number {
+  return sharpAttack(x, sr, t) ?? t;
+}
+
+/** Where the energy really jumps near `t`, or null when there's no clear attack to find. */
+function sharpAttack(x: Float32Array, sr: number, t: number): number | null {
   const B = Math.max(8, Math.round(sr * 0.002));
-  const a = Math.max(0, Math.round((t - 0.045) * sr));
-  const blocks = Math.floor((Math.min(x.length, Math.round((t + 0.03) * sr)) - a) / B);
-  if (blocks < 4) return t;
+  // flux peaks fire while the attack is still in the right half of the frame, i.e. early,
+  // so look further ahead than behind
+  const a = Math.max(0, Math.round((t - 0.035) * sr));
+  const blocks = Math.floor((Math.min(x.length, Math.round((t + 0.05) * sr)) - a) / B);
+  if (blocks < 8) return null;
   const e = new Float32Array(blocks);
   for (let b = 0; b < blocks; b++) {
     let sum = 0;
@@ -315,17 +322,22 @@ function refineOnset(x: Float32Array, sr: number, t: number): number {
     }
     e[b] = Math.log(sum / B + 1e-9);
   }
+  // Compare each block with the loudest of the previous ~12ms, not just the one before:
+  // bass makes 2ms energy ripple at ~100Hz, and a ripple never beats its own recent peak.
+  const BACK = 6;
   let best = -Infinity;
   let arg = -1;
-  for (let b = 2; b < blocks; b++) {
-    const d = e[b] - e[b - 2];
+  for (let b = BACK; b < blocks; b++) {
+    let before = -Infinity;
+    for (let k = b - BACK; k <= b - 2; k++) before = Math.max(before, e[k]);
+    const d = e[b] - before;
     if (d > best) {
       best = d;
       arg = b;
     }
   }
-  // ponytail: fixed jump threshold; soft attacks (pads, swells) fall back to the frame time
-  return best > 0.7 ? (a + (arg - 1) * B) / sr : t;
+  // ponytail: fixed jump threshold; soft attacks (pads, swells) have no single moment to find
+  return best > 0.7 ? (a + (arg - 1) * B) / sr : null;
 }
 
 function lineFit(xs: number[], ys: number[]): { a: number; p: number } {
@@ -413,7 +425,9 @@ function buildGrid(beats: number[], duration: number): GridPoint[] {
   while (ext[ext.length - 1] < duration + med) ext.push(ext[ext.length - 1] + med);
   for (let i = 0; i < ext.length - 1; i++) {
     const d = ext[i + 1] - ext[i];
-    for (let k = 0; k < 4; k++) grid.push({ t: ext[i] + (k * d) / 4, level: k === 0 ? 0 : k === 2 ? 1 : 2, beatDur: d });
+    // 16ths plus triplets, so swung and shuffled notes have somewhere true to land
+    for (const [f, level] of [[0, 0], [1 / 4, 2], [1 / 3, 2], [1 / 2, 1], [2 / 3, 2], [3 / 4, 2]])
+      grid.push({ t: ext[i] + f * d, level, beatDur: d });
   }
   return grid;
 }
@@ -511,6 +525,8 @@ const CONFIGS: Record<Difficulty, DiffConfig> = {
 };
 
 const LEVEL_WEIGHT = [1.3, 1.12, 1];
+/** how far (s) a real attack may sit from its grid line and still be drawn on the line */
+const SNAP_TOL = 0.015;
 
 interface Context {
   feats: Features;
@@ -795,24 +811,29 @@ export function analyze(samples: Float32Array, sr: number, progress: ProgressFn)
   const grid = buildGrid(beats, duration);
   // Snap every detector's hits to the 16th grid. Drum bands landing on the same spot stack
   // into a stronger accent (kick + hat); pitch change is kept apart as the melody strength.
-  const at = new Map<GridPoint, { o: Onset; peak: number; extra: number }>();
+  const at = new Map<GridPoint, { o: Onset; peak: number; extra: number; peakT: number }>();
   for (const c of hits) {
     const g = nearestGrid(grid, c.t);
     let cur = at.get(g);
     if (!cur) {
       const o: Onset = { t: g.t, frame: c.frame, strength: 0, centroid: 0, melody: 0, level: g.level, score: 0 };
-      at.set(g, (cur = { o, peak: 0, extra: 0 }));
+      at.set(g, (cur = { o, peak: 0, extra: 0, peakT: -1 }));
     }
     if (c.band === PITCH) cur.o.melody = Math.max(cur.o.melody, c.sal);
     else if (c.sal > cur.peak) {
       cur.extra += cur.peak * 0.35;
       cur.peak = c.sal;
+      cur.peakT = c.t;
       cur.o.frame = c.frame;
     } else cur.extra += c.sal * 0.35;
   }
   const onsets = [...at.values()]
-    .map(({ o, peak, extra }) => {
+    .map(({ o, peak, extra, peakT }) => {
       o.strength = peak + extra;
+      // The grid is a guess about where hits should be; the attack is where the hit is.
+      // Keep the clean grid time only when the two agree, so a note never sits off the sound.
+      const attack = peakT >= 0 ? sharpAttack(samples, sr, peakT) : null;
+      if (attack !== null && Math.abs(attack - o.t) > SNAP_TOL) o.t = attack;
       o.centroid = feats.centroid[Math.min(frames - 1, o.frame + 1)] || feats.centroid[o.frame];
       o.score = LEVEL_WEIGHT[o.level] * (o.strength + o.melody);
       return o;
